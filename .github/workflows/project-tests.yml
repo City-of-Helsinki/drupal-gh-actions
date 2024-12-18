@@ -23,10 +23,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Start stonehenge
-        uses: city-of-helsinki/drupal-gh-actions/.github/workflows/stonehenge.yml
+        uses: city-of-helsinki/drupal-gh-actions/.github/workflows/stonehenge.yml@main
 
       - name: Setup Docker compose
-        uses: city-of-helsinki/drupal-gh-actions/.github/workflows/compose.yml
+        uses: city-of-helsinki/drupal-gh-actions/.github/workflows/compose.yml@main
         with:
           compose_files: ${{ inputs.compose_files }}
           compose_profiles: ${{ inputs.compose_profiles }}
