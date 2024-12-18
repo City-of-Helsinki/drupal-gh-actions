@@ -30,13 +30,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ inputs.caller_repository }}
-          ref: ${{ inputs.caller_ref }}
+          repository: druidfi/stonehenge
+          ref: ${{ inputs.stonehenge_version }}
 
       - name: Install and start Stonehenge
-        run: |
-          git clone -b ${{ inputs.stonehenge_version }} https://github.com/druidfi/stonehenge.git /tmp/stonehenge
-          cd /tmp/stonehenge && make up
+        run: make up
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.caller_repository }}
+          ref: ${{ inputs.caller_ref }}
 
       - name: Setup Docker compose environment variables
         run: |
