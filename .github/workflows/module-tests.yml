@@ -7,7 +7,7 @@ on:
         type: string
     secrets:
       codecov_token:
-        required: false
+        required: true
 env:
   SYMFONY_DEPRECATIONS_HELPER: disabled
   COMPOSER_DISCARD_CHANGES: true
@@ -97,7 +97,6 @@ jobs:
             $MODULE_FOLDER
 
       - uses: codecov/codecov-action@v5
-        if: ${{ secrets.codecov_token }}
         with:
           fail_ci_if_error: true
           directory: ${{ env.MODULE_FOLDER }}
