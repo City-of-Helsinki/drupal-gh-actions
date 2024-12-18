@@ -56,6 +56,7 @@ jobs:
           rm -rf ./drupal/.git
 
       - name: Parse $MODULE_NAME from composer.json
+        working-directory: module
         run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
 
       - name: Set module folder
