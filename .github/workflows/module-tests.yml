@@ -43,7 +43,7 @@ jobs:
       # we have to start services manually.
       - name: Start services
         env:
-          WEBROOT: ${{ env.DRUPAL_ROOT }}/public
+          WEBROOT: "$(pwd)/drupal/public"
         run: entrypoint &
 
       - name: Clone platform
@@ -52,8 +52,11 @@ jobs:
           rm -rf ./drupal/.git
 
       - uses: actions/checkout@v4
+        with:
+          folder: 'module'
 
       - name: Parse $MODULE_NAME from composer.json
+        working-directory: module
         run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
 
       - name: Set module folder
@@ -64,13 +67,13 @@ jobs:
       - name: Install required composer dependencies
         working-directory: drupal
         run: |
-          composer config repositories.5 path $GITHUB_WORKSPACE
+          composer config repositories.5 path ../module
           composer require drupal/$MODULE_NAME -W
           # We use COMPOSER_MIRROR_PATH_REPOS=1 to mirror local repository
           # instead of symlinking it to prevent code coverage issues with
           # phpunit. Copy .git folder manually so codecov can generate line by
           # line coverage.
-          cp -r $GITHUB_WORKSPACE/.git $MODULE_FOLDER/
+          cp -r ../module/.git $MODULE_FOLDER/
 
       - name: Install Drupal
         working-directory: drupal
