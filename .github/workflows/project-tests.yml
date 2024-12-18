@@ -35,8 +35,8 @@ jobs:
 
       - name: Install and start Stonehenge
         run: |
-          git clone -b ${{ inputs.stonehenge_version }} https://github.com/druidfi/stonehenge.git ~/stonehenge
-          cd ~/stonehenge && make up
+          git clone -b ${{ inputs.stonehenge_version }} https://github.com/druidfi/stonehenge.git /tmp/stonehenge
+          cd /tmp/stonehenge && make up
 
       - name: Setup Docker compose environment variables
         run: |
