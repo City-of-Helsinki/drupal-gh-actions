@@ -1,5 +1,10 @@
 on:
   workflow_call:
+    inputs:
+      php_version:
+        description: 'Used PHP version'
+        required: true
+        type: string
     secrets:
       codecov_token:
         required: true
@@ -39,6 +44,13 @@ jobs:
 
       - name: Set Drupal root
         run: echo "DRUPAL_ROOT=./drupal" >> $GITHUB_ENV
+
+      # Actions worker overrides the default entrypoint with "tail -f /dev/null", so
+      # we have to start services manually.
+      - name: Start services
+        env:
+          WEBROOT: ${{ env.DRUPAL_ROOT }}/public
+        run: entrypoint &
 
       - name: Set module folder
         run: |
