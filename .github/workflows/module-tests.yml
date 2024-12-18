@@ -7,7 +7,7 @@ on:
         type: string
     secrets:
       codecov_token:
-        required: true
+        required: false
 env:
   SYMFONY_DEPRECATIONS_HELPER: disabled
   COMPOSER_DISCARD_CHANGES: true
@@ -97,6 +97,7 @@ jobs:
             $MODULE_FOLDER
 
       - uses: codecov/codecov-action@v5
+        if: ${{ secrets.codecov_token }}
         with:
           fail_ci_if_error: true
           directory: ${{ env.MODULE_FOLDER }}
@@ -106,6 +107,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: results-${{ matrix.php-versions }}
+          name: results-${{ inputs.php_version }}
           path: ${{ env.BROWSERTEST_OUTPUT_DIRECTORY }}
           retention-days: 1
