@@ -1,0 +1,108 @@
+on:
+  workflow_call:
+    secrets:
+      codecov_token:
+        required: true
+env:
+  SYMFONY_DEPRECATIONS_HELPER: disabled
+  COMPOSER_DISCARD_CHANGES: true
+  COMPOSER_MIRROR_PATH_REPOS: 1
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
+      options: --hostname app --user 1001
+    services:
+      db:
+        image: mysql:8
+        env:
+          MYSQL_USER: drupal
+          MYSQL_PASSWORD: drupal
+          MYSQL_DATABASE: drupal
+          MYSQL_ROOT_PASSWORD: drupal
+        ports:
+          - 3306:3306
+      chromium:
+        image: selenium/standalone-chromium
+        env:
+          SE_NODE_OVERRIDE_MAX_SESSIONS: "true"
+          SE_NODE_MAX_SESSIONS: "16"
+          SE_START_XVFB: "false"
+          SE_START_VNC: "false"
+          SE_SESSION_RETRY_INTERVAL: "1"
+          SE_SESSION_REQUEST_TIMEOUT: "10"
+
+    steps:
+      - name: Parse $MODULE_NAME from composer.json
+        run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
+
+      - name: Set Drupal root
+        run: echo "DRUPAL_ROOT=./drupal" >> $GITHUB_ENV
+
+      - name: Set module folder
+        run: |
+          echo "MODULE_FOLDER=$DRUPAL_ROOT/public/modules/contrib/$MODULE_NAME" >> $GITHUB_ENV
+          echo "BROWSERTEST_OUTPUT_DIRECTORY=$DRUPAL_ROOT/public/sites/simpletest" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+        with:
+          repository: city-of-helsinki/drupal-helfi-platform
+          path: ${{ env.DRUPAL_ROOT }}
+
+      - name: Remove Git folder
+        run: rm -r $DRUPAL_ROOT/.git
+
+      - uses: actions/checkout@v4
+
+      - name: Install required composer dependencies
+        working-directory: ${{ env.DRUPAL_ROOT }}
+        run: |
+          composer config repositories.5 path $GITHUB_WORKSPACE
+          composer require drupal/$MODULE_NAME -W
+          # We use COMPOSER_MIRROR_PATH_REPOS=1 to mirror local repository
+          # instead of symlinking it to prevent code coverage issues with
+          # phpunit. Copy .git folder manually so codecov can generate line by
+          # line coverage.
+          cp -r $GITHUB_WORKSPACE/.git $MODULE_FOLDER/
+
+      - name: Install Drupal
+        working-directory: ${{ env.DRUPAL_ROOT }}
+        run: |
+          php -d sendmail_path=$(which true); vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
+          vendor/bin/drush en $MODULE_NAME -y
+
+      - name: Run PHPCS
+        working-directory: ${{ env.DRUPAL_ROOT }}
+        run: vendor/bin/phpcs $MODULE_FOLDER --standard=Drupal,DrupalPractice --extensions=php,module,install
+
+      - name: Run phpstan
+        working-directory: ${{ env.DRUPAL_ROOT }}
+        run: vendor/bin/phpstan analyze -c $MODULE_FOLDER/phpstan.neon $MODULE_FOLDER
+
+      - name: Start services
+        working-directory: ${{ env.DRUPAL_ROOT }}
+        run: vendor/bin/drush runserver $SIMPLETEST_BASE_URL --dns &
+
+      - name: Run PHPUnit tests
+        working-directory: ${{ env.DRUPAL_ROOT }}
+        run: |
+          vendor/bin/phpunit \
+            --bootstrap $DRUPAL_ROOT/public/core/tests/bootstrap.php \
+            -c $MODULE_FOLDER/phpunit.xml \
+            --coverage-clover=$MODULE_FOLDER/coverage.xml \
+            $MODULE_FOLDER
+
+      - uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+          directory: ${{ env.MODULE_FOLDER }}
+          token: ${{ secrets.codecov_token }}
+
+      - name: Create an artifact from test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-${{ matrix.php-versions }}
+          path: ${{ env.BROWSERTEST_OUTPUT_DIRECTORY }}
+          retention-days: 1
