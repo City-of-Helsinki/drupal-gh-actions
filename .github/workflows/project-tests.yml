@@ -25,7 +25,7 @@ on:
         required: false
         type: boolean
 jobs:
-  setup:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,11 +38,13 @@ jobs:
           git clone -b ${{ inputs.stonehenge_version }} https://github.com/druidfi/stonehenge.git ~/stonehenge
           cd ~/stonehenge && make up
 
-      - name: Setup Docker compose
-        uses: city-of-helsinki/drupal-gh-actions/.github/workflows/compose.yml@main
-        with:
-          compose_files: ${{ inputs.compose_files }}
-          compose_profiles: ${{ inputs.compose_profiles }}
+      - name: Setup Docker compose environment variables
+        run: |
+          echo "COMPOSE_FILE=${{ inputs.compose_files }}" >> $GITHUB_ENV
+          echo "COMPOSE_PROFILES=${{ inputs.compose_profiles }}" >> $GITHUB_ENV
+
+      - name: Start compose project
+        run: docker compose up -d --wait
 
       - name: Build project
         run: docker compose exec app bash -c "composer install --no-interaction"
