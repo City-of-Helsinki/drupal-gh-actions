@@ -39,12 +39,6 @@ jobs:
           SE_SESSION_REQUEST_TIMEOUT: "10"
 
     steps:
-      - name: Parse $MODULE_NAME from composer.json
-        run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
-
-      - name: Set Drupal root
-        run: echo "DRUPAL_ROOT=./drupal" >> $GITHUB_ENV
-
       # Actions worker overrides the default entrypoint with "tail -f /dev/null", so
       # we have to start services manually.
       - name: Start services
@@ -52,18 +46,23 @@ jobs:
           WEBROOT: ${{ env.DRUPAL_ROOT }}/public
         run: entrypoint &
 
-      - name: Set module folder
-        run: |
-          echo "MODULE_FOLDER=$DRUPAL_ROOT/public/modules/contrib/$MODULE_NAME" >> $GITHUB_ENV
-          echo "BROWSERTEST_OUTPUT_DIRECTORY=$DRUPAL_ROOT/public/sites/simpletest" >> $GITHUB_ENV
-
       - name: Clone platform
         run: |
-          git clone --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git $DRUPAL_ROOT
-          rm -rf $DRUPAL_ROOT/.git
+          git clone --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
+          rm -rf ./drupal/.git
+
+      - uses: actions/checkout@v4
+
+      - name: Parse $MODULE_NAME from composer.json
+        run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
+
+      - name: Set module folder
+        run: |
+          echo "MODULE_FOLDER=./drupal/public/modules/contrib/$MODULE_NAME" >> $GITHUB_ENV
+          echo "BROWSERTEST_OUTPUT_DIRECTORY=./drupal/public/sites/simpletest" >> $GITHUB_ENV
 
       - name: Install required composer dependencies
-        working-directory: ${{ env.DRUPAL_ROOT }}
+        working-directory: drupal
         run: |
           composer config repositories.5 path $GITHUB_WORKSPACE
           composer require drupal/$MODULE_NAME -W
@@ -74,28 +73,28 @@ jobs:
           cp -r $GITHUB_WORKSPACE/.git $MODULE_FOLDER/
 
       - name: Install Drupal
-        working-directory: ${{ env.DRUPAL_ROOT }}
+        working-directory: drupal
         run: |
           php -d sendmail_path=$(which true); vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
           vendor/bin/drush en $MODULE_NAME -y
 
       - name: Run PHPCS
-        working-directory: ${{ env.DRUPAL_ROOT }}
+        working-directory: drupal
         run: vendor/bin/phpcs $MODULE_FOLDER --standard=Drupal,DrupalPractice --extensions=php,module,install
 
       - name: Run phpstan
-        working-directory: ${{ env.DRUPAL_ROOT }}
+        working-directory: drupal
         run: vendor/bin/phpstan analyze -c $MODULE_FOLDER/phpstan.neon $MODULE_FOLDER
 
       - name: Start services
-        working-directory: ${{ env.DRUPAL_ROOT }}
+        working-directory: drupal
         run: vendor/bin/drush runserver $SIMPLETEST_BASE_URL --dns &
 
       - name: Run PHPUnit tests
-        working-directory: ${{ env.DRUPAL_ROOT }}
+        working-directory: drupal
         run: |
           vendor/bin/phpunit \
-            --bootstrap $DRUPAL_ROOT/public/core/tests/bootstrap.php \
+            --bootstrap ./drupal/public/core/tests/bootstrap.php \
             -c $MODULE_FOLDER/phpunit.xml \
             --coverage-clover=$MODULE_FOLDER/coverage.xml \
             $MODULE_FOLDER
