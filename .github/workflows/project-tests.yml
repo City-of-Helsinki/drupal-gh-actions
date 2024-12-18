@@ -33,8 +33,10 @@ jobs:
           repository: ${{ inputs.caller_repository }}
           ref: ${{ inputs.caller_ref }}
 
-      - name: Start stonehenge
-        uses: city-of-helsinki/drupal-gh-actions/.github/workflows/stonehenge.yml@main
+      - name: Install and start Stonehenge
+        run: |
+          git clone -b ${{ inputs.stonehenge_version }} https://github.com/druidfi/stonehenge.git ~/stonehenge
+          cd ~/stonehenge && make up
 
       - name: Setup Docker compose
         uses: city-of-helsinki/drupal-gh-actions/.github/workflows/compose.yml@main
