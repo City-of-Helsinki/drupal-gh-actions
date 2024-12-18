@@ -46,9 +46,7 @@ jobs:
       # Actions worker overrides the default entrypoint with "tail -f /dev/null", so
       # we have to start services manually.
       - name: Start services
-        env:
-          WEBROOT: "$(pwd)/drupal/public"
-        run: entrypoint &
+        run: WEBROOT=$(pwd)/drupal/public entrypoint &
 
       - name: Clone platform
         run: |
@@ -61,8 +59,8 @@ jobs:
 
       - name: Set module folder
         run: |
-          echo "MODULE_FOLDER=./public/modules/contrib/$MODULE_NAME" >> $GITHUB_ENV
-          echo "BROWSERTEST_OUTPUT_DIRECTORY=./drupal/public/sites/simpletest" >> $GITHUB_ENV
+          echo "MODULE_FOLDER=$(pwd)/public/modules/contrib/$MODULE_NAME" >> $GITHUB_ENV
+          echo "BROWSERTEST_OUTPUT_DIRECTORY=$(pwd)/drupal/public/sites/simpletest" >> $GITHUB_ENV
 
       - name: Install required composer dependencies
         working-directory: drupal
@@ -88,10 +86,6 @@ jobs:
       - name: Run phpstan
         working-directory: drupal
         run: vendor/bin/phpstan analyze -c $MODULE_FOLDER/phpstan.neon $MODULE_FOLDER
-
-      - name: Start services
-        working-directory: drupal
-        run: vendor/bin/drush runserver $SIMPLETEST_BASE_URL --dns &
 
       - name: Run PHPUnit tests
         working-directory: drupal
