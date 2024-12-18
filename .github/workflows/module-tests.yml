@@ -97,7 +97,7 @@ jobs:
         working-directory: drupal
         run: |
           vendor/bin/phpunit \
-            --bootstrap ./drupal/public/core/tests/bootstrap.php \
+            --bootstrap ./public/core/tests/bootstrap.php \
             -c $MODULE_FOLDER/phpunit.xml \
             --coverage-clover=$MODULE_FOLDER/coverage.xml \
             $MODULE_FOLDER
