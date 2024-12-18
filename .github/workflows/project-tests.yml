@@ -1,0 +1,36 @@
+on:
+  workflow_call:
+    inputs:
+      compose_files:
+        description: 'Compose files'
+        default: 'compose.yaml:compose.ci.yaml'
+        required: false
+        type: string
+      compose_profiles:
+        description: 'Compose profiles'
+        default: ''
+        required: false
+        type: string
+      scan_security_updates:
+        description: 'Whether to scan security updates or not'
+        default: true
+        required: false
+        type: boolean
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start stonehenge
+        uses: city-of-helsinki/drupal-gh-actions/.github/workflows/stonehenge.yml
+
+      - name: Setup Docker compose
+        uses: city-of-helsinki/drupal-gh-actions/.github/workflows/compose.yml
+        with:
+          compose_files: ${{ inputs.compose_files }}
+          compose_profiles: ${{ inputs.compose_profiles }}
+
+      - name: Build project
+        run: docker compose exec app bash -c "composer install --no-interaction"
+

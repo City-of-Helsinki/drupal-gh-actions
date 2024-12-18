@@ -1,0 +1,25 @@
+on:
+  workflow_call:
+    inputs:
+      compose_files:
+        description: 'Compose files'
+        default: ''
+        required: true
+        type: string
+      compose_profiles:
+        description: 'Compose profiles'
+        default: ''
+        required: false
+        type: string
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup Docker compose environment variables
+        run: |
+          echo "COMPOSE_FILE=${{ inputs.compose_files }}" >> $GITHUB_ENV
+          echo "COMPOSE_PROFILES=${{ inputs.compose_profiles }}" >> $GITHUB_ENV
+
+      - name: Start compose project
+        run: docker compose up -d --wait

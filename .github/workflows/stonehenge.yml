@@ -1,0 +1,18 @@
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Stonehenge version'
+        default: '5.x'
+        required: false
+        type: string
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install and start Stonehenge
+        run: |
+          git clone -b ${{ inputs.version }} https://github.com/druidfi/stonehenge.git ~/stonehenge
+          cd ~/stonehenge && make up
