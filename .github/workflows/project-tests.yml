@@ -1,6 +1,14 @@
 on:
   workflow_call:
     inputs:
+      caller_repository:
+        description: 'The caller repository'
+        required: true
+        type: string
+      caller_ref:
+        description: 'The caller Git reference'
+        required: true
+        type: string
       compose_files:
         description: 'Compose files'
         default: 'compose.yaml:compose.ci.yaml'
@@ -21,6 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.caller_repository }}
+          ref: ${{ inputs.caller_ref }}
 
       - name: Start stonehenge
         uses: city-of-helsinki/drupal-gh-actions/.github/workflows/stonehenge.yml@main
@@ -33,4 +44,17 @@ jobs:
 
       - name: Build project
         run: docker compose exec app bash -c "composer install --no-interaction"
+
+      - name: Run PHPCS
+        run: |
+          docker compose exec app bash -c "vendor/bin/phpcs public/modules/custom/"
+          docker compose exec app bash -c "vendor/bin/phpcs public/themes/custom/"
+
+      - name: Run phpstan
+        run: docker compose exec app bash -c "vendor/bin/phpstan analyze"
+
+      - name: Download latest dump
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh run download -n latest.sql
 
