@@ -57,15 +57,10 @@ jobs:
           echo "MODULE_FOLDER=$DRUPAL_ROOT/public/modules/contrib/$MODULE_NAME" >> $GITHUB_ENV
           echo "BROWSERTEST_OUTPUT_DIRECTORY=$DRUPAL_ROOT/public/sites/simpletest" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v4
-        with:
-          repository: city-of-helsinki/drupal-helfi-platform
-          path: ${{ env.DRUPAL_ROOT }}
-
-      - name: Remove Git folder
-        run: rm -r $DRUPAL_ROOT/.git
-
-      - uses: actions/checkout@v4
+      - name: Clone platform
+        run: |
+          git clone --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git $DRUPAL_ROOT
+          rm -rf $DRUPAL_ROOT/.git
 
       - name: Install required composer dependencies
         working-directory: ${{ env.DRUPAL_ROOT }}
