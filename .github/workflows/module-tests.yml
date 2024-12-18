@@ -41,7 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          folder: 'module'
+          path: 'module'
 
       # Actions worker overrides the default entrypoint with "tail -f /dev/null", so
       # we have to start services manually.
