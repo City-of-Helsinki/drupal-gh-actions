@@ -93,6 +93,7 @@ jobs:
           if [ ! -f "$MODULE_FOLDER/phpcs.xml" ]; then
             ARGS='${{ inputs.phpcs_args }}'
           fi
+          echo "Running phpcs with args: ${ARGS}"
           vendor/bin/phpcs $MODULE_FOLDER $ARGS
 
       - name: Run phpstan
