@@ -87,11 +87,14 @@ jobs:
       - name: Run PHPCS
         working-directory: drupal
         run: |
-          # Use module's phpcs.xml by default.
-          ARGS='--standard=$MODULE_FOLDER/phpcs.xml'
 
           if [ ! -f "$MODULE_FOLDER/phpcs.xml" ]; then
             ARGS='${{ inputs.phpcs_args }}'
+          else
+            # Remove any existing phpcs files and copy module's
+            # phpcs file to Drupal root.
+            rm -f phpcs.xml.dist
+            cp $MODULE_FOLDER/phpcs.xml .
           fi
           echo "Running phpcs with args: ${ARGS}"
           vendor/bin/phpcs $MODULE_FOLDER $ARGS
