@@ -5,6 +5,13 @@ on:
         description: 'Used PHP version'
         required: true
         type: string
+      # Composer dev dependencies are never parsed. Make sure to include
+      # all necessary dev dependencies here.
+      composer_dev_dependencies:
+        description: 'Extra composer dev dependencies'
+        required: false
+        default: ''
+        type: string
       phpcs_args:
         description: 'Used phpcs arguments. These are emitted if phpcs.xml file exists.'
         required: false
@@ -71,7 +78,7 @@ jobs:
         working-directory: drupal
         run: |
           composer config repositories.5 path ../module
-          composer require drupal/$MODULE_NAME -W
+          composer require drupal/$MODULE_NAME ${{ inputs.composer_dev_dependencies }} -W
           # We use COMPOSER_MIRROR_PATH_REPOS=1 to mirror local repository
           # instead of symlinking it to prevent code coverage issues with
           # phpunit. Copy .git folder manually so codecov can generate line by
@@ -96,7 +103,6 @@ jobs:
             rm -f phpcs.xml.dist
             cp $MODULE_FOLDER/phpcs.xml .
           fi
-          echo "Running phpcs with args: ${ARGS}"
           vendor/bin/phpcs $MODULE_FOLDER $ARGS
 
       - name: Run phpstan
