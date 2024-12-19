@@ -88,10 +88,10 @@ jobs:
         working-directory: drupal
         run: |
           # Use module's phpcs.xml by default.
-          ARGS=--standard=$MODULE_FOLDER/phpcs.xml
+          ARGS='--standard=$MODULE_FOLDER/phpcs.xml'
 
           if [ ! -f "$MODULE_FOLDER/phpcs.xml" ]; then
-            ARGS=${{ inputs.phpcs_args }}
+            ARGS='${{ inputs.phpcs_args }}'
           fi
           vendor/bin/phpcs $MODULE_FOLDER $ARGS
 
