@@ -5,6 +5,11 @@ on:
         description: 'Used PHP version'
         required: true
         type: string
+      phpcs_standards:
+        description: 'Used phpcs --standards. This is emitted if phpcs.xml file exists.'
+        required: false
+        type: string
+        default: 'Drupal'
     secrets:
       codecov_token:
         required: true
@@ -81,11 +86,19 @@ jobs:
 
       - name: Run PHPCS
         working-directory: drupal
-        run: vendor/bin/phpcs $MODULE_FOLDER --standard=Drupal,DrupalPractice --extensions=php,module,install
+        run: |
+          # Use module's phpcs.xml by default.
+          STANDARD=$MODULE_FOLDER/phpcs.xml
+
+          if [ ! -f "$STANDARD" ]; then
+            STANDARD=${{ inputs.php_standards }}
+          fi
+          vendor/bin/phpcs $MODULE_FOLDER --standard=$STANDARD --extensions=php,module,install
 
       - name: Run phpstan
         working-directory: drupal
-        run: vendor/bin/phpstan analyze -c $MODULE_FOLDER/phpstan.neon $MODULE_FOLDER
+        run: |
+          vendor/bin/phpstan analyze -c $MODULE_FOLDER/phpstan.neon $MODULE_FOLDER
 
       - name: Run PHPUnit tests
         working-directory: drupal
