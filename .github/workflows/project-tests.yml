@@ -23,7 +23,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: druidfi/stonehenge
-          ref: ${{ inputs.stonehenge_version }}
 
       - name: Install and start Stonehenge
         run: make up
