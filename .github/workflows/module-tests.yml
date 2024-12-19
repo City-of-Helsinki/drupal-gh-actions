@@ -88,12 +88,12 @@ jobs:
         working-directory: drupal
         run: |
           # Use module's phpcs.xml by default.
-          STANDARD=$MODULE_FOLDER/phpcs.xml
+          ARGS=$MODULE_FOLDER/phpcs.xml
 
-          if [ ! -f "$STANDARD" ]; then
-            STANDARD=${{ inputs.php_standards }}
+          if [ ! -f "$ARGS" ]; then
+            ARGS=--standard=${{ inputs.phpcs_standards }} --extensions=php,module,install,them,inc
           fi
-          vendor/bin/phpcs $MODULE_FOLDER --standard=$STANDARD --extensions=php,module,install
+          vendor/bin/phpcs $MODULE_FOLDER $ARGS
 
       - name: Run phpstan
         working-directory: drupal
