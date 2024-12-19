@@ -5,11 +5,11 @@ on:
         description: 'Used PHP version'
         required: true
         type: string
-      phpcs_standards:
-        description: 'Used phpcs --standards. This is emitted if phpcs.xml file exists.'
+      phpcs_args:
+        description: 'Used phpcs arguments. These are emitted if phpcs.xml file exists.'
         required: false
         type: string
-        default: 'Drupal'
+        default: '--standard=Drupal --extensions=php,module,install,theme,inc'
     secrets:
       codecov_token:
         required: true
@@ -87,11 +87,11 @@ jobs:
       - name: Run PHPCS
         working-directory: drupal
         run: |
+          # Use module's phpcs.xml by default.
+          ARGS=--standard=$MODULE_FOLDER/phpcs.xml
+
           if [ ! -f "$MODULE_FOLDER/phpcs.xml" ]; then
-            ARGS=--standard=${{ inputs.phpcs_standards }} --extensions=php,module,install,them,inc
-          else
-            # Use module's phpcs.xml by default.
-            ARGS=--standard=$MODULE_FOLDER/phpcs.xml
+            ARGS=${{ inputs.phpcs_args }}
           fi
           vendor/bin/phpcs $MODULE_FOLDER $ARGS
 
