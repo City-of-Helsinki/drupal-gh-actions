@@ -1,22 +1,9 @@
 on:
   workflow_call:
     inputs:
-      caller_repository:
-        description: 'The caller repository'
-        required: true
-        type: string
-      caller_ref:
-        description: 'The caller Git reference'
-        required: true
-        type: string
       compose_files:
         description: 'Compose files'
         default: 'compose.yaml:compose.ci.yaml'
-        required: false
-        type: string
-      compose_profiles:
-        description: 'Compose profiles'
-        default: ''
         required: false
         type: string
       check_security_updates:
@@ -42,9 +29,6 @@ jobs:
         run: make up
 
       - uses: actions/checkout@v4
-        with:
-          repository: ${{ inputs.caller_repository }}
-          ref: ${{ inputs.caller_ref }}
 
       - name: Make sure configuration was exported in correct language (en or und)
         if: ${{ inputs.check_config_language }}
@@ -58,8 +42,17 @@ jobs:
 
       - name: Setup Docker compose environment variables
         run: |
+          # Read existing compose profiles from .env file
+          source .env
+
+          # Make sure testing is always included in compose profiles.
+          if [ ! -n "$COMPOSE_PROFILES" ]; then
+            COMPOSE_PROFILES=testing
+          else
+            COMPOSE_PROFILES=$COMPOSE_PROFILES,testing
+          fi
           echo "COMPOSE_FILE=${{ inputs.compose_files }}" >> $GITHUB_ENV
-          echo "COMPOSE_PROFILES=${{ inputs.compose_profiles }}" >> $GITHUB_ENV
+          echo "COMPOSE_PROFILES=$COMPOSE_PROFILES" >> $GITHUB_ENV
 
       - name: Start compose project
         run: docker compose up -d --wait
