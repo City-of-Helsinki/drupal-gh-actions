@@ -39,12 +39,6 @@ jobs:
             exit 1
           fi
 
-      - name: Check that subtheme is not built with dev mode
-        run: |
-          if [ -d "public/themes/custom/hdbt_subtheme" ]; then
-            docker compose exec app bash -c "if grep -q 'sourceMappingURL=' -R public/themes/custom/hdbt_subtheme/dist/css; then exit 1; fi"
-          fi
-
       - name: Setup Docker compose environment variables
         run: |
           # Read existing compose profiles from .env file
@@ -61,6 +55,12 @@ jobs:
 
       - name: Start compose project
         run: docker compose up -d --wait
+
+      - name: Check that subtheme is not built with dev mode
+        run: |
+          if [ -d "public/themes/custom/hdbt_subtheme" ]; then
+            docker compose exec app bash -c "if grep -q 'sourceMappingURL=' -R public/themes/custom/hdbt_subtheme/dist/css; then exit 1; fi"
+          fi
 
       - name: Build project
         run: docker compose exec app bash -c "composer install --no-interaction"
