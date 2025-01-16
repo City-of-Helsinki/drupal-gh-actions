@@ -159,6 +159,10 @@ jobs:
     needs: tests
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download coverage.xml
         if: ${{ env.SONARCLOUD_TOKEN }}
         uses: actions/download-artifact@v4
