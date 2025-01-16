@@ -124,7 +124,7 @@ jobs:
             $MODULE_FOLDER
 
       - name: SonarQube Scan
-        if: ${{ env.SONARCLOUD_TOKEN }}
+        if: ${{ (env.SONARCLOUD_TOKEN) && (hashFiles('sonar-project.properties') != '') }}
         uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
