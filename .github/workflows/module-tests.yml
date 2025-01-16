@@ -159,8 +159,6 @@ jobs:
     needs: tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
       - name: Download coverage.xml
         if: ${{ env.SONARCLOUD_TOKEN }}
         uses: actions/download-artifact@v4
@@ -168,7 +166,7 @@ jobs:
           name: phpunit-report
 
       - name: Fix coverage paths
-        run: sed -i "s|${{ needs.tests.outputs.module_folder }}||g" coverage.xml report.xml
+        run: sed -i "s|${{ needs.tests.outputs.module_folder }}/||g" coverage.xml report.xml
 
       - name: Debug phpunit reports
         run: |
