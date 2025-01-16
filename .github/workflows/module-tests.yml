@@ -127,7 +127,6 @@ jobs:
             --bootstrap $(pwd)/public/core/tests/bootstrap.php \
             -c $MODULE_FOLDER/phpunit.xml \
             --coverage-clover=$MODULE_FOLDER/coverage.xml \
-            --log-junit=$MODULE_FOLDER/report.xml \
             $MODULE_FOLDER
 
       - name: Store phpunit reports
@@ -136,7 +135,6 @@ jobs:
           name: phpunit-report
           path: |
             ${{ env.MODULE_FOLDER }}/coverage.xml
-            ${{ env.MODULE_FOLDER }}/report.xml
 
       - uses: codecov/codecov-action@v5
         if: ${{ env.CODECOV_TOKEN }}
@@ -170,7 +168,7 @@ jobs:
           name: phpunit-report
 
       - name: Fix coverage paths
-        run: sed -i "s|${{ needs.tests.outputs.module_folder }}/||g" coverage.xml report.xml
+        run: sed -i "s|${{ needs.tests.outputs.module_folder }}/||g" coverage.xml
 
       - name: Debug
         run: |
@@ -180,7 +178,6 @@ jobs:
       - name: Debug phpunit reports
         run: |
           cat coverage.xml
-          cat report.xml
 
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
