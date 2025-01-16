@@ -168,7 +168,7 @@ jobs:
           name: phpunit-report
 
       - name: Fix paths
-        run: sed -i "s|${{ needs.tests.outputs.module_folder }}|$(pwd)|g" coverage.xml
+        run: sed -i "s|${{ needs.tests.outputs.module_folder }}|$(pwd)|g" coverage.xml report.xml
 
       - name: Debug phpunit reports
         run: |
