@@ -26,15 +26,14 @@ env:
   SYMFONY_DEPRECATIONS_HELPER: disabled
   COMPOSER_DISCARD_CHANGES: true
   COMPOSER_MIRROR_PATH_REPOS: 1
+  CODECOV_TOKEN: ${{ secrets.codecov_token }}
+  SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
 jobs:
   tests:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
       options: --hostname app --user 1001
-    env:
-      SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
-      CODECOV_TOKEN: ${{ secrets.codecov_token }}
     services:
       db:
         image: mysql:8
@@ -124,11 +123,11 @@ jobs:
             --coverage-clover=$MODULE_FOLDER/coverage.xml \
             $MODULE_FOLDER
 
-      - name: SonarQube Scan
-        if: ${{ env.SONARCLOUD_TOKEN }}
-        uses: SonarSource/sonarqube-scan-action@v4
-        env:
-          SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
+      - name: Store coverage.xml
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage.xml
+          path: ${{ env.MODULE_FOLDER }}/coverage.xml
 
       - uses: codecov/codecov-action@v5
         if: ${{ env.CODECOV_TOKEN }}
@@ -144,3 +143,22 @@ jobs:
           name: results-${{ inputs.php_version }}
           path: ${{ env.BROWSERTEST_OUTPUT_DIRECTORY }}
           retention-days: 1
+
+  # This is split into separate job because we run tests inside a Docker
+  # container and sonarqube-scan-action has a dependency to Java.
+  sonarcloud:
+    if: ${{ env.SONARCLOUD_TOKEN }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download coverage.xml
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage.xml
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
+
