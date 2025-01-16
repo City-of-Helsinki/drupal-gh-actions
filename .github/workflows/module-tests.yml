@@ -31,6 +31,8 @@ env:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    outputs:
+      module_folder: ${{ steps.module_folder.outputs.module_folder }}
     container:
       image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
       options: --hostname app --user 1001
@@ -77,6 +79,10 @@ jobs:
         run: |
           echo "MODULE_FOLDER=$(pwd)/drupal/public/modules/contrib/$MODULE_NAME" >> $GITHUB_ENV
           echo "BROWSERTEST_OUTPUT_DIRECTORY=$(pwd)/drupal/public/sites/simpletest" >> $GITHUB_ENV
+
+      - name: Store module folder
+        id: module_folder
+        run: echo "module_folder=$MODULE_FOLDER" >> "$GITHUB_OUTPUT"
 
       - name: Install required composer dependencies
         working-directory: drupal
@@ -157,6 +163,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage.xml
+
+      - name: Fix paths
+        run: sed -i "s|${{ needs.tests.outputs.module_folder }}|$(pwd)|g" coverage.xml
 
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
