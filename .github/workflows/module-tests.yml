@@ -167,6 +167,9 @@ jobs:
       - name: Fix paths
         run: sed -i "s|${{ needs.tests.outputs.module_folder }}|$(pwd)|g" coverage.xml
 
+      - name: Debug coverage.xml
+        run: cat coverage.xml
+
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
         uses: SonarSource/sonarqube-scan-action@v4
