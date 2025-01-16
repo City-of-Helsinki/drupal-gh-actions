@@ -172,6 +172,11 @@ jobs:
       - name: Fix coverage paths
         run: sed -i "s|${{ needs.tests.outputs.module_folder }}/||g" coverage.xml report.xml
 
+      - name: Debug
+        run: |
+          ls -la
+          ls -la src
+
       - name: Debug phpunit reports
         run: |
           cat coverage.xml
