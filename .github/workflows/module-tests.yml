@@ -18,8 +18,10 @@ on:
         type: string
         default: '--standard=Drupal --extensions=php,module,install,theme,inc'
     secrets:
+      sonarcloud_token:
+        required: false
       codecov_token:
-        required: true
+        required: false
 env:
   SYMFONY_DEPRECATIONS_HELPER: disabled
   COMPOSER_DISCARD_CHANGES: true
@@ -119,7 +121,14 @@ jobs:
             --coverage-clover=$MODULE_FOLDER/coverage.xml \
             $MODULE_FOLDER
 
+      - name: SonarQube Scan
+        if: ${{ secrets.sonarcloud_token }}
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
+
       - uses: codecov/codecov-action@v5
+        if: ${{ secrets.codecov_token }}
         with:
           fail_ci_if_error: true
           directory: ${{ env.MODULE_FOLDER }}
