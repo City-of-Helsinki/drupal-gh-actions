@@ -147,17 +147,19 @@ jobs:
   # This is split into separate job because we run tests inside a Docker
   # container and sonarqube-scan-action has a dependency to Java.
   sonarcloud:
-    if: secrets.sonarcloud_token
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Download coverage.xml
+        if: ${{ env.SONARCLOUD_TOKEN }}
         uses: actions/download-artifact@v4
         with:
           name: coverage.xml
 
       - name: SonarQube Scan
+        if: ${{ env.SONARCLOUD_TOKEN }}
         uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
