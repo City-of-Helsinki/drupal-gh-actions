@@ -130,13 +130,11 @@ jobs:
             --log-junit=$MODULE_FOLDER/report.xml \
             $MODULE_FOLDER
 
-      - name: Store phpunit reports
+      - name: Store build data
         uses: actions/upload-artifact@v4
         with:
-          name: phpunit-report
-          path: |
-            ${{ env.MODULE_FOLDER }}/coverage.xml
-            ${{ env.MODULE_FOLDER }}/report.xml
+          name: build-data
+          path: ${{ env.MODULE_FOLDER }}
 
       - uses: codecov/codecov-action@v5
         if: ${{ env.CODECOV_TOKEN }}
@@ -159,15 +157,11 @@ jobs:
     needs: tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download coverage.xml
+      - name: Download build
         if: ${{ env.SONARCLOUD_TOKEN }}
         uses: actions/download-artifact@v4
         with:
-          name: phpunit-report
+          name: build-data
 
       - name: Fix coverage paths
         run: sed -i "s|${{ needs.tests.outputs.module_folder }}/||g" coverage.xml report.xml
