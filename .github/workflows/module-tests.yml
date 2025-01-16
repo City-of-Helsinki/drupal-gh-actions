@@ -26,6 +26,8 @@ env:
   SYMFONY_DEPRECATIONS_HELPER: disabled
   COMPOSER_DISCARD_CHANGES: true
   COMPOSER_MIRROR_PATH_REPOS: 1
+  SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
+  CODECOV_TOKEN: ${{ secrets.codecov_token }}
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -122,13 +124,13 @@ jobs:
             $MODULE_FOLDER
 
       - name: SonarQube Scan
-        if: ${{ secrets.sonarcloud_token }}
+        if: ${{ env.SONARCLOUD_TOKEN }}
         uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
 
       - uses: codecov/codecov-action@v5
-        if: ${{ secrets.codecov_token }}
+        if: ${{ env.CODECOV_TOKEN }}
         with:
           fail_ci_if_error: true
           directory: ${{ env.MODULE_FOLDER }}
