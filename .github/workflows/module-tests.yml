@@ -18,15 +18,21 @@ on:
         type: string
         default: '--standard=Drupal --extensions=php,module,install,theme,inc'
     secrets:
+      sonarcloud_token:
+        required: false
       codecov_token:
-        required: true
+        required: false
 env:
   SYMFONY_DEPRECATIONS_HELPER: disabled
   COMPOSER_DISCARD_CHANGES: true
   COMPOSER_MIRROR_PATH_REPOS: 1
+  CODECOV_TOKEN: ${{ secrets.codecov_token }}
+  SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
 jobs:
   tests:
     runs-on: ubuntu-latest
+    outputs:
+      module_folder: ${{ steps.module_folder.outputs.module_folder }}
     container:
       image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
       options: --hostname app --user 1001
@@ -74,6 +80,10 @@ jobs:
           echo "MODULE_FOLDER=$(pwd)/drupal/public/modules/contrib/$MODULE_NAME" >> $GITHUB_ENV
           echo "BROWSERTEST_OUTPUT_DIRECTORY=$(pwd)/drupal/public/sites/simpletest" >> $GITHUB_ENV
 
+      - name: Store module folder
+        id: module_folder
+        run: echo "module_folder=$MODULE_FOLDER" >> "$GITHUB_OUTPUT"
+
       - name: Install required composer dependencies
         working-directory: drupal
         run: |
@@ -119,7 +129,15 @@ jobs:
             --coverage-clover=$MODULE_FOLDER/coverage.xml \
             $MODULE_FOLDER
 
+      - name: Store phpunit reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: phpunit-report
+          path: |
+            ${{ env.MODULE_FOLDER }}/coverage.xml
+
       - uses: codecov/codecov-action@v5
+        if: ${{ env.CODECOV_TOKEN }}
         with:
           fail_ci_if_error: true
           directory: ${{ env.MODULE_FOLDER }}
@@ -132,3 +150,30 @@ jobs:
           name: results-${{ inputs.php_version }}
           path: ${{ env.BROWSERTEST_OUTPUT_DIRECTORY }}
           retention-days: 1
+
+  # This is split into separate job because we run tests inside a Docker
+  # container and sonarqube-scan-action has a dependency to Java.
+  sonarcloud:
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download coverage.xml
+        if: ${{ env.SONARCLOUD_TOKEN }}
+        uses: actions/download-artifact@v4
+        with:
+          name: phpunit-report
+
+      - name: Fix coverage paths
+        if: ${{ env.SONARCLOUD_TOKEN }}
+        run: sed -i "s|${{ needs.tests.outputs.module_folder }}/||g" coverage.xml
+
+      - name: SonarQube Scan
+        if: ${{ env.SONARCLOUD_TOKEN }}
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
+
