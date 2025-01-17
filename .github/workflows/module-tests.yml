@@ -168,6 +168,7 @@ jobs:
           name: phpunit-report
 
       - name: Fix coverage paths
+        if: ${{ env.SONARCLOUD_TOKEN }}
         run: sed -i "s|${{ needs.tests.outputs.module_folder }}/||g" coverage.xml
 
       - name: SonarQube Scan
