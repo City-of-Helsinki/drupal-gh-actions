@@ -104,8 +104,8 @@ jobs:
 
       - name: Export coverage.xml
         run: |
-          docker compose exec app bash -c "cat /app/coverage.xml"
           docker compose exec app bash -c "cat /app/coverage.xml" > coverage.xml
+          ls -la
           cat coverage.xml
 
       - name: SonarQube Scan
