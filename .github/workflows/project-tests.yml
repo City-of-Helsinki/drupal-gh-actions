@@ -28,6 +28,8 @@ jobs:
         run: make up
 
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Make sure configuration was exported in correct language (en or und)
         if: ${{ inputs.check_config_language }}
@@ -93,7 +95,13 @@ jobs:
           if [ -d "tests/" ]; then
             docker compose exec app bash -c "composer test-php tests/"
           fi
-          docker compose exec app bash -c "composer test-php public/modules/custom"
+          docker compose exec app bash -c "vendor/bin/phpunit --coverage-clover=$GITHUB_WORKSPACE/coverage.xml public/modules/custom"
+
+      - name: SonarQube Scan
+        if: ${{ env.SONARCLOUD_TOKEN }}
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
 
       - name: Export logs
         if: always()
