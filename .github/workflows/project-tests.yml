@@ -104,9 +104,9 @@ jobs:
 
       - name: Export coverage.xml
         run: |
-          docker compose exec app bash -c "cat /app/coverage.xml" > coverage.xml
+          docker compose exec app bash -c "cat /app/coverage.xml" > $GITHUB_WORKSPACE/coverage.xml
           ls -la
-          cat coverage.xml
+          cat $GITHUB_WORKSPACE/coverage.xml
 
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
