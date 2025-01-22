@@ -16,6 +16,9 @@ on:
         default: true
         required: false
         type: boolean
+    secrets:
+      sonarcloud_token:
+        required: false
 jobs:
   tests:
     runs-on: ubuntu-latest
