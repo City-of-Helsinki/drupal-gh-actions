@@ -19,6 +19,8 @@ on:
     secrets:
       sonarcloud_token:
         required: false
+env:
+  SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -101,6 +103,7 @@ jobs:
           docker compose exec app bash -c "vendor/bin/phpunit --coverage-clover=coverage.xml public/modules/custom"
 
       - name: SonarQube Scan
+        if: ${{ env.SONARCLOUD_TOKEN }}
         uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
