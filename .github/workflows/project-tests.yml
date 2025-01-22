@@ -102,6 +102,11 @@ jobs:
           fi
           docker compose exec app bash -c "vendor/bin/phpunit --coverage-clover=coverage.xml public/modules/custom"
 
+      - name: Export coverage.xml
+        run: |
+          docker compose exec app bash -c "cat coverage.xml" > coverage.xml
+          cat coverage.xml
+
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
         uses: SonarSource/sonarqube-scan-action@v4
