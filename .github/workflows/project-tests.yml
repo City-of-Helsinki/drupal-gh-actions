@@ -100,6 +100,7 @@ jobs:
           if [ -d "tests/" ]; then
             docker compose exec app bash -c "composer test-php tests/"
           fi
+          touch /app/coverage-base.xml
           docker compose exec app bash -c "vendor/bin/phpunit -c /app/phpunit.xml.dist --coverage-clover=/app/coverage-base.xml public/modules/custom"
 
       - name: Export coverage.xml
