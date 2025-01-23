@@ -16,6 +16,11 @@ on:
         default: true
         required: false
         type: boolean
+    secrets:
+      sonarcloud_token:
+        required: false
+env:
+  SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -28,6 +33,8 @@ jobs:
         run: make up
 
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Make sure configuration was exported in correct language (en or und)
         if: ${{ inputs.check_config_language }}
@@ -93,7 +100,17 @@ jobs:
           if [ -d "tests/" ]; then
             docker compose exec app bash -c "composer test-php tests/"
           fi
-          docker compose exec app bash -c "composer test-php public/modules/custom"
+          docker compose exec app bash -c "vendor/bin/phpunit -c /app/phpunit.xml.dist --coverage-clover=/app/coverage-base.xml public/modules/custom"
+
+      - name: Export coverage.xml
+        run: |
+          docker compose exec app bash -c "cat /app/coverage-base.xml" > coverage.xml
+
+      - name: SonarQube Scan
+        if: ${{ env.SONARCLOUD_TOKEN }}
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
 
       - name: Export logs
         if: always()
