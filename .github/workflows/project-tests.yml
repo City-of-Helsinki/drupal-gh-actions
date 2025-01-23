@@ -100,13 +100,13 @@ jobs:
           if [ -d "tests/" ]; then
             docker compose exec app bash -c "composer test-php tests/"
           fi
-          docker compose exec app bash -c "vendor/bin/phpunit -c /app/phpunit.xml.dist --coverage-clover=/app/coverage.xml public/modules/custom"
+          docker compose exec app bash -c "vendor/bin/phpunit -c /app/phpunit.xml.dist --coverage-clover=/app/coverage-base.xml public/modules/custom"
 
       - name: Export coverage.xml
         run: |
-          docker compose exec app bash -c "cat /app/coverage.xml" > $GITHUB_WORKSPACE/coverage.xml
+          docker compose exec app bash -c "cat /app/coverage-base.xml" > coverage.xml
           ls -la
-          cat $GITHUB_WORKSPACE/coverage.xml
+          cat coverage.xml
 
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
