@@ -107,6 +107,7 @@ jobs:
         run: |
           if [ -f "/app/coverage-base.xml" ]; then
             docker compose exec app bash -c "cat /app/coverage-base.xml" > coverage.xml
+            sed -i "s|/app/||g" coverage.xml
           fi
 
       - name: SonarQube Scan
