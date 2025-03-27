@@ -56,6 +56,9 @@ jobs:
           drush helfi:locale-import helfi_platform_config
 
           # Run Platform config updates if command exists.
+          # Note. The helfi:platform-config:update needs to be run after the
+          # helfi:locale-import. Running the commands vice versa would increase
+          # the number of obsolete variables in configuration translations.
           if drush helfi:platform-config:update --help > /dev/null 2>&1; then
             drush helfi:platform-config:update
           fi
