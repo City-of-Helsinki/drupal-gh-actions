@@ -66,3 +66,7 @@ jobs:
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
 ```
+
+## NPM Audit
+
+Updates HDBT Subtheme Node.js dependencies using `npm audit`.

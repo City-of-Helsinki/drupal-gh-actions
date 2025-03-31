@@ -85,7 +85,7 @@ jobs:
           cat $GITHUB_STEP_SUMMARY > /tmp/pr-message.txt
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           commit-message: Update configuration
           token: ${{ secrets.automatic_update_token }}
