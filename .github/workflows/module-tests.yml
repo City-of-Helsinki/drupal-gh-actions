@@ -89,6 +89,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build
+          path: drupal
 
       - name: Debug
         run: |
@@ -146,6 +147,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build
+          path: drupal
       # Actions worker overrides the default entrypoint with "tail -f /dev/null", so
       # we have to start services manually.
       - name: Start services
@@ -198,6 +200,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build
+          path: drupal
 
       - name: Run PHPUnit tests
         working-directory: drupal
