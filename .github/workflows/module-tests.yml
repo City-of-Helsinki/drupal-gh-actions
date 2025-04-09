@@ -90,6 +90,11 @@ jobs:
         with:
           name: build
 
+      - name: Debug
+        run: |
+          ls -la
+          pwd
+
       - name: Run PHPCS
         working-directory: drupal
         run: |
