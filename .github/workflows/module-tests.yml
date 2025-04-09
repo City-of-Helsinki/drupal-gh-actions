@@ -29,13 +29,88 @@ env:
   CODECOV_TOKEN: ${{ secrets.codecov_token }}
   SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
 jobs:
-  tests:
+  build:
     runs-on: ubuntu-latest
     outputs:
       module_folder: ${{ steps.module_folder.outputs.module_folder }}
+      module_name: ${{ steps.module_name.outputs.module_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: 'module'
+      - name: Clone platform
+        run: |
+          git clone --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
+          rm -rf ./drupal/.git
+
+      - name: Parse $MODULE_NAME from composer.json
+        working-directory: module
+        run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
+
+      - name: Set module folder
+        run: |
+          echo "MODULE_FOLDER=$(pwd)/drupal/public/modules/contrib/$MODULE_NAME" >> $GITHUB_ENV
+
+      - name: Store module folder
+        id: module_folder
+        run: echo "module_folder=$MODULE_FOLDER" >> "$GITHUB_OUTPUT"
+
+      - name: Store module name
+        id: module_name
+        run: echo "module_name=$MODULE_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Install required composer dependencies
+        working-directory: drupal
+        run: |
+          composer config repositories.5 path ../module
+          composer require drupal/$MODULE_NAME ${{ inputs.composer_dev_dependencies }} -W
+          # We use COMPOSER_MIRROR_PATH_REPOS=1 to mirror local repository
+          # instead of symlinking it to prevent code coverage issues with
+          # phpunit. Copy .git folder manually so codecov can generate line by
+          # line coverage.
+          cp -r ../module/.git $MODULE_FOLDER/
+
+      - name: Store build
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: drupal
+
+  coding-standards:
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
       options: --hostname app --user 1001
+    env:
+      MODULE_FOLDER: ${{ needs.build.outputs.module_folder }}
+    steps:
+      - name: Run PHPCS
+        working-directory: drupal
+        run: |
+          if [ ! -f "$MODULE_FOLDER/phpcs.xml" ]; then
+            ARGS='${{ inputs.phpcs_args }}'
+          else
+            # Remove any existing phpcs files and copy module's
+            # phpcs file to Drupal root.
+            rm -f phpcs.xml.dist
+            cp $MODULE_FOLDER/phpcs.xml .
+          fi
+          vendor/bin/phpcs $MODULE_FOLDER $ARGS
+
+      - name: Run phpstan
+        working-directory: drupal
+        run: |
+          vendor/bin/phpstan analyze -c $MODULE_FOLDER/phpstan.neon $MODULE_FOLDER
+
+  functional-tests:
+    runs-on: ubuntu-latest
+    needs: build
+    container:
+      image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
+      options: --hostname app --user 1001
+    env:
+      MODULE_FOLDER: ${{ needs.build.outputs.module_folder }}
+      MODULE_NAME: ${{ needs.build.outputs.module_name }}
     services:
       db:
         image: mysql:8
@@ -55,45 +130,15 @@ jobs:
           SE_START_VNC: "false"
           SE_SESSION_RETRY_INTERVAL: "1"
           SE_SESSION_REQUEST_TIMEOUT: "10"
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Download build
+        uses: actions/download-artifact@v4
         with:
-          path: 'module'
-
+          name: build
       # Actions worker overrides the default entrypoint with "tail -f /dev/null", so
       # we have to start services manually.
       - name: Start services
         run: WEBROOT=$(pwd)/drupal/public entrypoint &
-
-      - name: Clone platform
-        run: |
-          git clone --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
-          rm -rf ./drupal/.git
-
-      - name: Parse $MODULE_NAME from composer.json
-        working-directory: module
-        run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
-
-      - name: Set module folder
-        run: |
-          echo "MODULE_FOLDER=$(pwd)/drupal/public/modules/contrib/$MODULE_NAME" >> $GITHUB_ENV
-          echo "BROWSERTEST_OUTPUT_DIRECTORY=$(pwd)/drupal/public/sites/simpletest" >> $GITHUB_ENV
-
-      - name: Store module folder
-        id: module_folder
-        run: echo "module_folder=$MODULE_FOLDER" >> "$GITHUB_OUTPUT"
-
-      - name: Install required composer dependencies
-        working-directory: drupal
-        run: |
-          composer config repositories.5 path ../module
-          composer require drupal/$MODULE_NAME ${{ inputs.composer_dev_dependencies }} -W
-          # We use COMPOSER_MIRROR_PATH_REPOS=1 to mirror local repository
-          # instead of symlinking it to prevent code coverage issues with
-          # phpunit. Copy .git folder manually so codecov can generate line by
-          # line coverage.
-          cp -r ../module/.git $MODULE_FOLDER/
 
       - name: Install Drupal
         working-directory: drupal
@@ -101,24 +146,47 @@ jobs:
           php -d sendmail_path=$(which true); vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
           vendor/bin/drush en $MODULE_NAME -y
 
-      - name: Run PHPCS
+      - name: Set browsertest output directory
+        run: echo "BROWSERTEST_OUTPUT_DIRECTORY=$(pwd)/drupal/public/sites/simpletest" >> $GITHUB_ENV
+
+      - name: Run PHPUnit tests
         working-directory: drupal
         run: |
+          vendor/bin/phpunit \
+            --bootstrap $(pwd)/public/core/tests/bootstrap.php \
+            -c $MODULE_FOLDER/phpunit.xml \
+            --testsuite functional,functional-javascript,existing-site,existing-site-javascript \
+            $MODULE_FOLDER
 
-          if [ ! -f "$MODULE_FOLDER/phpcs.xml" ]; then
-            ARGS='${{ inputs.phpcs_args }}'
-          else
-            # Remove any existing phpcs files and copy module's
-            # phpcs file to Drupal root.
-            rm -f phpcs.xml.dist
-            cp $MODULE_FOLDER/phpcs.xml .
-          fi
-          vendor/bin/phpcs $MODULE_FOLDER $ARGS
+      - name: Create an artifact from test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-${{ inputs.php_version }}
+          path: ${{ env.BROWSERTEST_OUTPUT_DIRECTORY }}
+          retention-days: 1
 
-      - name: Run phpstan
-        working-directory: drupal
-        run: |
-          vendor/bin/phpstan analyze -c $MODULE_FOLDER/phpstan.neon $MODULE_FOLDER
+  unit-tests:
+    runs-on: ubuntu-latest
+    needs: build
+    container:
+      image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
+      options: --hostname app --user 1001
+    services:
+      db:
+        image: mysql:8
+        env:
+          MYSQL_USER: drupal
+          MYSQL_PASSWORD: drupal
+          MYSQL_DATABASE: drupal
+          MYSQL_ROOT_PASSWORD: drupal
+        ports:
+          - 3306:3306
+    steps:
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: build
 
       - name: Run PHPUnit tests
         working-directory: drupal
@@ -127,6 +195,7 @@ jobs:
             --bootstrap $(pwd)/public/core/tests/bootstrap.php \
             -c $MODULE_FOLDER/phpunit.xml \
             --coverage-clover=$MODULE_FOLDER/coverage.xml \
+            --testsuite unit,kernel \
             $MODULE_FOLDER
 
       - name: Store phpunit reports
@@ -143,18 +212,10 @@ jobs:
           directory: ${{ env.MODULE_FOLDER }}
           token: ${{ secrets.codecov_token }}
 
-      - name: Create an artifact from test report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: results-${{ inputs.php_version }}
-          path: ${{ env.BROWSERTEST_OUTPUT_DIRECTORY }}
-          retention-days: 1
-
   # This is split into separate job because we run tests inside a Docker
   # container and sonarqube-scan-action has a dependency to Java.
   sonarcloud:
-    needs: tests
+    needs: unit-tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -169,7 +230,7 @@ jobs:
 
       - name: Fix coverage paths
         if: ${{ env.SONARCLOUD_TOKEN }}
-        run: sed -i "s|${{ needs.tests.outputs.module_folder }}/||g" coverage.xml
+        run: sed -i "s|${{ needs.build.outputs.module_folder }}/||g" coverage.xml
 
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
