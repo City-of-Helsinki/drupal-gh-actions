@@ -108,12 +108,12 @@ jobs:
             rm -f phpcs.xml.dist
             cp $MODULE_FOLDER/phpcs.xml .
           fi
-          vendor/bin/phpcs $MODULE_FOLDER $ARGS
+          php vendor/bin/phpcs $MODULE_FOLDER $ARGS
 
       - name: Run phpstan
         working-directory: drupal
         run: |
-          vendor/bin/phpstan analyze -c $MODULE_FOLDER/phpstan.neon $MODULE_FOLDER
+          php vendor/bin/phpstan analyze -c $MODULE_FOLDER/phpstan.neon $MODULE_FOLDER
 
   functional-tests:
     runs-on: ubuntu-latest
@@ -158,7 +158,7 @@ jobs:
         working-directory: drupal
         run: |
           php -d sendmail_path=$(which true); vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
-          vendor/bin/drush en $MODULE_NAME -y
+          php vendor/bin/drush en $MODULE_NAME -y
 
       - name: Set browsertest output directory
         run: echo "BROWSERTEST_OUTPUT_DIRECTORY=$(pwd)/drupal/public/sites/simpletest" >> $GITHUB_ENV
@@ -166,7 +166,7 @@ jobs:
       - name: Run PHPUnit tests
         working-directory: drupal
         run: |
-          vendor/bin/phpunit \
+          php vendor/bin/phpunit \
             --bootstrap $(pwd)/public/core/tests/bootstrap.php \
             -c $MODULE_FOLDER/phpunit.xml \
             --testsuite functional,functional-javascript,existing-site,existing-site-javascript \
@@ -206,7 +206,7 @@ jobs:
       - name: Run PHPUnit tests
         working-directory: drupal
         run: |
-          vendor/bin/phpunit \
+          php vendor/bin/phpunit \
             --bootstrap $(pwd)/public/core/tests/bootstrap.php \
             -c $MODULE_FOLDER/phpunit.xml \
             --coverage-clover=$MODULE_FOLDER/coverage.xml \
