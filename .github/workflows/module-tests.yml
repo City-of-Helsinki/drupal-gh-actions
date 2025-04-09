@@ -157,7 +157,7 @@ jobs:
       - name: Install Drupal
         working-directory: drupal
         run: |
-          php -d sendmail_path=$(which true); vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
+          php -d sendmail_path=$(which true); php vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
           php vendor/bin/drush en $MODULE_NAME -y
 
       - name: Set browsertest output directory
@@ -186,6 +186,8 @@ jobs:
     container:
       image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
       options: --hostname app --user 1001
+    env:
+      MODULE_FOLDER: ${{ needs.build.outputs.module_folder }}
     services:
       db:
         image: mysql:8
