@@ -95,6 +95,7 @@ jobs:
         run: |
           ls -la
           pwd
+          ls -la drupal
 
       - name: Run PHPCS
         working-directory: drupal
