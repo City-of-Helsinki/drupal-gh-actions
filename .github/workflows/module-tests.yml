@@ -169,8 +169,7 @@ jobs:
           php vendor/bin/phpunit \
             --bootstrap $(pwd)/public/core/tests/bootstrap.php \
             -c $MODULE_FOLDER/phpunit.xml \
-            --testsuite functional,functional-javascript,existing-site,existing-site-javascript \
-            $MODULE_FOLDER
+            --testsuite functional,functional-javascript,existing-site,existing-site-javascript
 
       - name: Create an artifact from test report
         uses: actions/upload-artifact@v4
@@ -212,8 +211,7 @@ jobs:
             --bootstrap $(pwd)/public/core/tests/bootstrap.php \
             -c $MODULE_FOLDER/phpunit.xml \
             --coverage-clover=$MODULE_FOLDER/coverage.xml \
-            --testsuite unit,kernel \
-            $MODULE_FOLDER
+            --testsuite unit,kernel
 
       - name: Store phpunit reports
         uses: actions/upload-artifact@v4
