@@ -153,7 +153,7 @@ jobs:
       - name: Install Drupal
         working-directory: drupal
         run: |
-          php -d sendmail_path=$(which true); php vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
+          php vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
           php vendor/bin/drush en $MODULE_NAME -y
 
       - name: Set browsertest output directory
