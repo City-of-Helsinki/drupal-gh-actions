@@ -145,14 +145,15 @@ jobs:
         with:
           name: build
           path: drupal
-      # Actions worker overrides the default entrypoint with "tail -f /dev/null", so
-      # we have to start services manually.
+        # Actions worker overrides the default entrypoint with "tail -f /dev/null", so
+        # we have to start services manually.
       - name: Start services
         run: WEBROOT=$(pwd)/drupal/public entrypoint &
 
       - name: Install Drupal
         working-directory: drupal
         run: |
+          cat vendor/bin/drush
           php vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
           php vendor/bin/drush en $MODULE_NAME -y
 
