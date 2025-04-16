@@ -155,6 +155,7 @@ jobs:
         run: |
           ls -la vendor/bin
           cat vendor/bin/drush
+          du -hs vendor/bin/drush
           php vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
           php vendor/bin/drush en $MODULE_NAME -y
 
