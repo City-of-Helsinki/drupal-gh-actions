@@ -75,6 +75,8 @@ jobs:
         with:
           name: build
           path: drupal
+          # Keep .git folder.
+          include-hidden-files: true
 
   coding-standards:
     runs-on: ubuntu-latest
@@ -90,12 +92,6 @@ jobs:
         with:
           name: build
           path: drupal
-
-      - name: Debug
-        run: |
-          ls -la
-          pwd
-          ls -la drupal
 
       - name: Run PHPCS
         working-directory: drupal
