@@ -153,6 +153,7 @@ jobs:
       - name: Install Drupal
         working-directory: drupal
         run: |
+          ls -la
           cat vendor/bin/drush
           php vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
           php vendor/bin/drush en $MODULE_NAME -y
