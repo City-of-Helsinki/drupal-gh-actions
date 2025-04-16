@@ -47,13 +47,9 @@ jobs:
         working-directory: module
         run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
 
-      - name: Set module folder
-        run: |
-          echo "MODULE_FOLDER=$(pwd)/drupal/public/modules/contrib/$MODULE_NAME" >> $GITHUB_ENV
-
       - name: Store module folder
         id: module_folder
-        run: echo "module_folder=$MODULE_FOLDER" >> "$GITHUB_OUTPUT"
+        run: echo "module_folder=$(pwd)/drupal/public/modules/contrib/$MODULE_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Store module name
         id: module_name
@@ -68,7 +64,7 @@ jobs:
           # instead of symlinking it to prevent code coverage issues with
           # phpunit. Copy .git folder manually so codecov can generate line by
           # line coverage.
-          cp -r ../module/.git $MODULE_FOLDER/
+          cp -r ../module/.git ${{ steps.module_folder.outputs.module_folder }}/
 
       - name: Store build
         uses: actions/upload-artifact@v4
@@ -153,11 +149,10 @@ jobs:
       - name: Install Drupal
         working-directory: drupal
         run: |
-          ls -la vendor/bin
-          cat vendor/bin/drush
-          du -hs vendor/bin/drush
-          php vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
-          php vendor/bin/drush en $MODULE_NAME -y
+          # Execute flag is lost due to actions/download-artifact.
+          chmod +x vendor/bin/drush
+          vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
+          vendor/bin/drush en $MODULE_NAME -y
 
       - name: Set browsertest output directory
         run: echo "BROWSERTEST_OUTPUT_DIRECTORY=$(pwd)/drupal/public/sites/simpletest" >> $GITHUB_ENV
