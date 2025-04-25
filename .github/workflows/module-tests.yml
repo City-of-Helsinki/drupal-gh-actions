@@ -209,7 +209,7 @@ jobs:
 
       - name: Fix coverage paths
         if: ${{ env.SONARCLOUD_TOKEN }}
-        run: sed -i "s|${{ env.MODULE_FOLDER }}/||g" coverage.xml
+        run: sed -i "s|${{ env.MODULE_FOLDER }}/||g" $MODULE_FOLDER/coverage.xml
 
       - name: Store phpunit reports
         uses: actions/upload-artifact@v4
