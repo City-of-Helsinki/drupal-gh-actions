@@ -226,6 +226,8 @@ jobs:
   sonarcloud:
     needs: unit-tests
     runs-on: ubuntu-latest
+    env:
+      MODULE_FOLDER: ${{ needs.build.outputs.module_folder }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -239,7 +241,7 @@ jobs:
 
       - name: Fix coverage paths
         if: ${{ env.SONARCLOUD_TOKEN }}
-        run: sed -i "s|${{ needs.build.outputs.module_folder }}/||g" coverage.xml
+        run: sed -i "s|${{ env.MODULE_FOLDER }}/||g" coverage.xml
 
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
