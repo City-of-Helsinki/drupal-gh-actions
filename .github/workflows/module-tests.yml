@@ -207,6 +207,10 @@ jobs:
             --coverage-clover=$MODULE_FOLDER/coverage.xml \
             --testsuite unit,kernel
 
+      - name: Fix coverage paths
+        if: ${{ env.SONARCLOUD_TOKEN }}
+        run: sed -i "s|${{ env.MODULE_FOLDER }}/||g" coverage.xml
+
       - name: Store phpunit reports
         uses: actions/upload-artifact@v4
         with:
@@ -226,8 +230,6 @@ jobs:
   sonarcloud:
     needs: unit-tests
     runs-on: ubuntu-latest
-    env:
-      MODULE_FOLDER: ${{ needs.build.outputs.module_folder }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -238,10 +240,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: phpunit-report
-
-      - name: Fix coverage paths
-        if: ${{ env.SONARCLOUD_TOKEN }}
-        run: sed -i "s|${{ env.MODULE_FOLDER }}/||g" coverage.xml
 
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
