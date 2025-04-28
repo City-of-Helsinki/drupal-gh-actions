@@ -150,7 +150,7 @@ jobs:
         working-directory: drupal
         run: |
           # Execute flag is lost due to actions/download-artifact.
-          chmod +x vendor/bin/* vendor/drush/drush/drush
+          chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php
           vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
           vendor/bin/drush en $MODULE_NAME -y
 
