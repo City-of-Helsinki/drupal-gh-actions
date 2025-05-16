@@ -43,6 +43,10 @@ jobs:
           $(drush sql:connect) < latest.sql
           drush cim -y && drush updb -y && drush cr
           composer update drupal/helfi_* drupal/hdbt* -W --no-interaction
+
+          # Make sure new patches are installed.
+          composer install --no-interaction --no-dev
+
           drush cr
 
           # Update translations from localize.drupal.org and helfi-modules
