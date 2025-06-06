@@ -47,8 +47,6 @@ jobs:
           # Make sure new patches are installed.
           composer install --no-interaction --no-dev
 
-          drush cr
-
           # Update translations from localize.drupal.org and helfi-modules
           # before running update hooks to reduce clutter in configuration files.
           drush locale:check && drush locale:update
