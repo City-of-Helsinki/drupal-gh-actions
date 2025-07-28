@@ -165,6 +165,10 @@ jobs:
             -c $MODULE_FOLDER/phpunit.xml \
             --testsuite functional,functional-javascript,existing-site,existing-site-javascript
 
+      - name: Export logs
+        if: always()
+        run: docker compose logs app > ${{ env.BROWSERTEST_OUTPUT_DIRECTORY }}/service.log
+
       - name: Create an artifact from test report
         uses: actions/upload-artifact@v4
         if: always()
