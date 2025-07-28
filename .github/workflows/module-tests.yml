@@ -110,31 +110,9 @@ jobs:
   functional-tests:
     runs-on: ubuntu-latest
     needs: build
-    container:
-      image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
-      options: --hostname app --user 1001
     env:
       MODULE_FOLDER: ${{ needs.build.outputs.module_folder }}
       MODULE_NAME: ${{ needs.build.outputs.module_name }}
-    services:
-      db:
-        image: mysql:8
-        env:
-          MYSQL_USER: drupal
-          MYSQL_PASSWORD: drupal
-          MYSQL_DATABASE: drupal
-          MYSQL_ROOT_PASSWORD: drupal
-        ports:
-          - 3306:3306
-      chromium:
-        image: selenium/standalone-chromium
-        env:
-          SE_NODE_OVERRIDE_MAX_SESSIONS: "true"
-          SE_NODE_MAX_SESSIONS: "16"
-          SE_START_XVFB: "false"
-          SE_START_VNC: "false"
-          SE_SESSION_RETRY_INTERVAL: "1"
-          SE_SESSION_REQUEST_TIMEOUT: "10"
     steps:
       - uses: actions/checkout@v4
         with:
