@@ -167,6 +167,7 @@ jobs:
 
       - name: Collect docker logs
         uses: jwalton/gh-docker-logs@v2
+        if: always()
         with:
           dest: "${{ env.BROWSERTEST_OUTPUT_DIRECTORY }}"
 
