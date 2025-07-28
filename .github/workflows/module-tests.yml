@@ -165,9 +165,10 @@ jobs:
             -c $MODULE_FOLDER/phpunit.xml \
             --testsuite functional,functional-javascript,existing-site,existing-site-javascript
 
-      - name: Export logs
-        if: always()
-        run: docker logs "${{ job.container.id }}" > ${{ env.BROWSERTEST_OUTPUT_DIRECTORY }}/service.log
+      - name: Collect docker logs
+        uses: jwalton/gh-docker-logs@v2
+        with:
+          dest: "${{ env.BROWSERTEST_OUTPUT_DIRECTORY }}"
 
       - name: Create an artifact from test report
         uses: actions/upload-artifact@v4
