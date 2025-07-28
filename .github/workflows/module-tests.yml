@@ -136,23 +136,45 @@ jobs:
           SE_SESSION_RETRY_INTERVAL: "1"
           SE_SESSION_REQUEST_TIMEOUT: "10"
     steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: druidfi/stonehenge
+
+      - name: Install and start Stonehenge
+        run: make up
+
       - name: Download build
         uses: actions/download-artifact@v4
         with:
           name: build
           path: drupal
-        # Actions worker overrides the default entrypoint with "tail -f /dev/null", so
-        # we have to start services manually.
-      - name: Start services
-        run: WEBROOT=$(pwd)/drupal/public entrypoint &
+
+      - name: Setup Docker compose environment variables
+        working-directory: drupal
+        run: |
+          # Read existing compose profiles from .env file
+          source .env
+
+          # Make sure testing is always included in compose profiles.
+          if [ ! -n "$COMPOSE_PROFILES" ]; then
+            COMPOSE_PROFILES=testing
+          else
+            COMPOSE_PROFILES=$COMPOSE_PROFILES,testing
+          fi
+          echo "COMPOSE_FILE=${{ inputs.compose_files }}" >> $GITHUB_ENV
+          echo "COMPOSE_PROFILES=$COMPOSE_PROFILES" >> $GITHUB_ENV
+
+      - name: Start compose project
+        working-directory: drupal
+        run: docker compose up -d --wait
 
       - name: Install Drupal
         working-directory: drupal
         run: |
           # Execute flag is lost due to actions/download-artifact.
-          chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php
-          vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
-          vendor/bin/drush en $MODULE_NAME -y
+          docker compose exec bash -c "chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php"
+          docker compose exec bash -c "vendor/bin/drush --yes -v site-install minimal --db-url=\"$SIMPLETEST_DB\""
+          docker compose exec bash -c "vendor/bin/drush en $MODULE_NAME -y"
 
       - name: Set browsertest output directory
         run: echo "BROWSERTEST_OUTPUT_DIRECTORY=$(pwd)/drupal/public/sites/simpletest" >> $GITHUB_ENV
@@ -160,16 +182,10 @@ jobs:
       - name: Run PHPUnit tests
         working-directory: drupal
         run: |
-          php vendor/bin/phpunit \
-            --bootstrap $(pwd)/public/core/tests/bootstrap.php \
+          docker compose exec bash -c "php vendor/bin/phpunit \
+            --bootstrap /app/public/core/tests/bootstrap.php \
             -c $MODULE_FOLDER/phpunit.xml \
-            --testsuite functional,functional-javascript,existing-site,existing-site-javascript
-
-      - name: Collect docker logs
-        uses: jwalton/gh-docker-logs@v2
-        if: always()
-        with:
-          dest: "${{ env.BROWSERTEST_OUTPUT_DIRECTORY }}"
+            --testsuite functional,functional-javascript,existing-site,existing-site-javascript"
 
       - name: Create an artifact from test report
         uses: actions/upload-artifact@v4
