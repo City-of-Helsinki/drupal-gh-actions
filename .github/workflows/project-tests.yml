@@ -91,7 +91,7 @@ jobs:
 
       - name: Install Drupal
         run: |
-          docker compose exec app bash -c "mysql --user=drupal --password=drupal --database=drupal --host=db --port=3306 -A < latest.sql"
+          docker compose exec app bash -c "mysql --skip-ssl --user=drupal --password=drupal --database=drupal --host=db --port=3306 -A < latest.sql"
           docker compose exec app bash -c "drush deploy"
 
       - name: Run PHPUnit tests
