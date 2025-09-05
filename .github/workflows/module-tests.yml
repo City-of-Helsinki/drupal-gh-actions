@@ -35,7 +35,7 @@ jobs:
       module_folder: ${{ steps.module_folder.outputs.module_folder }}
       module_name: ${{ steps.module_name.outputs.module_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: 'module'
       - name: Clone platform
@@ -231,7 +231,7 @@ jobs:
     needs: unit-tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 

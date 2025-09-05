@@ -9,7 +9,7 @@ jobs:
   update-config:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/city-of-helsinki/drupal-web:8.3
+      image: ghcr.io/city-of-helsinki/drupal-web:8.4
       options: --hostname app --user 1001
     services:
       db:
@@ -23,7 +23,7 @@ jobs:
           - 3306:3306
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Download latest dump
         env:
@@ -54,14 +54,14 @@ jobs:
 
           # Run Platform config updates if command exists.
           # Note. The helfi:platform-config:update needs to be run before the
-          # helfi:locale-import. This may increase the number of obsolete 
+          # helfi:locale-import. This may increase the number of obsolete
           # variables in configuration translations, but running the commands
           # in reverse order would prevent configuration translation rewrites
           # from being applied.
           if drush helfi:platform-config:update --help > /dev/null 2>&1; then
             drush helfi:platform-config:update
           fi
-          
+
           # Update translations from helfi_platform_config. These translations
           # consists of overrides for non customised translations and will
           # override current translation with a non customised translation.
