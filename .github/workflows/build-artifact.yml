@@ -10,6 +10,8 @@ on:
       sentry_crons:
         required: false
 name: Build artifacts
+env:
+  SENTRY_CRONS: ${{ secrets.sentry_crons }}
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,7 +21,7 @@ jobs:
           repository: druidfi/stonehenge
 
       - name: Report in_progress status to Sentry
-        if: ${{ secrets.sentry_crons }}
+        if: ${{ env.SENTRY_CRONS }}
         run: curl "${{ secrets.sentry_crons }}?status=in_progress"
 
       - name: Install and start Stonehenge
@@ -53,4 +55,5 @@ jobs:
           retention-days: 10
 
       - name: Report OK status to Sentry
+        if: ${{ env.SENTRY_CRONS }}
         run: curl "${{ secrets.sentry_crons }}?status=ok"
