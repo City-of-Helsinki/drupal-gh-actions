@@ -15,7 +15,7 @@ Available configuration:
 
 Sentry Cron monitoring ensures the Artifact build runs as expected. To set it up:
 
-1. In Sentry, go to Crons → + Add Monitor and use the following settings:
+1. In Sentry, go to **Crons → Add Monitor** and use the following settings:
    - Name: GitHub Artifact
    - Project: Your project
    - Schedule: Select Cron. The value should match your project's schedule in the artifact.yml file. Default is 0 0 ** 0.
