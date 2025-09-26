@@ -1,14 +1,14 @@
 on:
   workflow_call:
-    secrets:
-      sentry_crons:
-        required: false
     inputs:
       compose_files:
         description: 'Compose files'
         default: 'compose.yaml:compose.ci.yaml'
         required: false
         type: string
+    secrets:
+      sentry_crons:
+        required: false
 name: Build artifacts
 jobs:
   build:
