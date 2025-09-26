@@ -6,7 +6,12 @@ on:
         default: 'compose.yaml:compose.ci.yaml'
         required: false
         type: string
+    secrets:
+      sentry_crons:
+        required: false
 name: Build artifacts
+env:
+  SENTRY_CRONS: ${{ secrets.sentry_crons }}
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,6 +19,10 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: druidfi/stonehenge
+
+      - name: Report in_progress status to Sentry
+        if: ${{ env.SENTRY_CRONS }}
+        run: curl "${{ secrets.sentry_crons }}?status=in_progress"
 
       - name: Install and start Stonehenge
         run: make up
@@ -44,3 +53,7 @@ jobs:
           name: latest.sql
           path: latest.sql
           retention-days: 10
+
+      - name: Report OK status to Sentry
+        if: ${{ env.SENTRY_CRONS }}
+        run: curl "${{ secrets.sentry_crons }}?status=ok"
