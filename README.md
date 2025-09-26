@@ -18,9 +18,8 @@ Sentry Cron monitoring ensures the Artifact build runs as expected. To set it up
 1. In Sentry, go to **Crons → Add Monitor** and use the following settings:
    - **Name**: GitHub Artifact
    - **Project**: Your project
-   - **Schedule**: Select Cron. The value should match your project's schedule in the artifact.yml file. Default is 0 0 ** 0.
-   - **Owner**: #drupal-developers
-   - **Notify**: #drupal-developers
+   - **Schedule**: Select Cron. The value should match your project's schedule in the `artifact.yml` file. Default is `0 0 ** 0`.
+   - **Owner**: `#drupal-developers`
 2. In your project’s repository, go to: **Settings → Secrets and variables → Actions → New repository secret**
 3. Add a secret called `SENTRY_CRONS`. Its value is the Sentry ingest URL combined with your monitor slug and public key, e.g.: `https://example.com/api/0/cron/<monitor_slug>/examplePublicKey/`
 4. Ensure your project’s `artifact.yml` passes the `sentry_crons` secret to the parent workflow:
