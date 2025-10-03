@@ -16,11 +16,10 @@ on:
         default: true
         required: false
         type: boolean
-      check_config_language_ignore_webform:
-        description: 'Check configurations are exported in correct language, but ignore webforms'
-        default: true
+      check_config_language_ignore_files:
+        description: 'Array of file patterns to ignore during langcode check'
         required: false
-        type: boolean
+        type: array
     secrets:
       sonarcloud_token:
         required: false
@@ -45,8 +44,10 @@ jobs:
         if: ${{ inputs.check_config_language }}
         run: |
           IGNORE_PATTERN=""
-          if [ "${{ inputs.check_config_language_ignore_webform }}" == "true" ]; then
-            IGNORE_PATTERN="--exclude='webform.webform.*'"
+          if [ -n "${{ inputs.check_config_language_ignore_files }}" ]; then
+            # Parse array patterns and build exclude patterns
+            IGNORE_FILES='${{ inputs.check_config_language_ignore_files }}'
+            IGNORE_PATTERN=$(echo "$IGNORE_FILES" | tr ' ' '\n' | sed "s/^/--exclude='/; s/$/'/" | tr '\n' ' ')
           fi
 
           OUTPUT=$(grep -oP '^langcode: \b(?!(?:en|und)\b)\w+' conf -R $IGNORE_PATTERN || true)
