@@ -46,6 +46,9 @@ Available configuration:
 
 - `check_security_updates`: Whether to run `composer audit` command to scan security updates. Defaults to `true`.
 - `check_config_language`:  Check if configuration in `conf/cmi` folder is exported using correct `langcode` (`und` or `en`). Defaults to `true`.
+- `check_config_language_ignore_files`: Comma separated list of patterns to exclude files from language config check
+  - Useful for e.g. sites with webforms only on Finnish pages
+  - Use `*` as wildcard to exclude multiple config files with a pattern
 
 ```yaml
 # .github/workflows/test.yml
@@ -60,6 +63,7 @@ jobs:
     with:
       check_security_updates: true
       check_config_language: true
+      check_config_language_ignore_files: "webform.webform.*,views.view.content.yml"
 ```
 
 ## Module tests
