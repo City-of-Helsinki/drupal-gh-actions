@@ -16,6 +16,10 @@ on:
         default: true
         required: false
         type: boolean
+      check_config_language_ignore_files:
+        description: 'Array of file patterns to ignore during langcode check'
+        required: false
+        type: array
     secrets:
       sonarcloud_token:
         required: false
@@ -39,7 +43,14 @@ jobs:
       - name: Make sure configuration was exported in correct language (en or und)
         if: ${{ inputs.check_config_language }}
         run: |
-          OUTPUT=$(grep -oP '^langcode: \b(?!(?:en|und)\b)\w+' conf -R || true)
+          IGNORE_PATTERN=""
+          if [ -n "${{ inputs.check_config_language_ignore_files }}" ]; then
+            # Parse array patterns and build exclude patterns
+            IGNORE_FILES='${{ inputs.check_config_language_ignore_files }}'
+            IGNORE_PATTERN=$(echo "$IGNORE_FILES" | tr ' ' '\n' | sed "s/^/--exclude='/; s/$/'/" | tr '\n' ' ')
+          fi
+
+          OUTPUT=$(grep -oP '^langcode: \b(?!(?:en|und)\b)\w+' conf -R $IGNORE_PATTERN || true)
           if [ ! -z "$OUTPUT" ]; then
             echo "Found configuration that does not match the pattern 'langcode: (en|und)':" >> $GITHUB_STEP_SUMMARY
             echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
