@@ -16,6 +16,10 @@ on:
         default: true
         required: false
         type: boolean
+      check_config_language_ignore_files:
+        description: 'Comma-separated list of file patterns to ignore during langcode check'
+        required: false
+        type: string
     secrets:
       sonarcloud_token:
         required: false
@@ -40,6 +44,12 @@ jobs:
         if: ${{ inputs.check_config_language }}
         run: |
           OUTPUT=$(grep -oP '^langcode: \b(?!(?:en|und)\b)\w+' conf -R || true)
+
+          # Ignore files if specified
+          if [ -n "${{ inputs.check_config_language_ignore_files }}" ] && [ -n "$OUTPUT" ]; then
+            IGNORE_PATTERN=$(echo '${{ inputs.check_config_language_ignore_files }}' | tr ',' '|')
+            OUTPUT=$(echo "$OUTPUT" | grep -vE "$IGNORE_PATTERN" || true)
+          fi
           if [ ! -z "$OUTPUT" ]; then
             echo "Found configuration that does not match the pattern 'langcode: (en|und)':" >> $GITHUB_STEP_SUMMARY
             echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
