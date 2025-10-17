@@ -43,16 +43,13 @@ jobs:
       - name: Make sure configuration was exported in correct language (en or und)
         if: ${{ inputs.check_config_language }}
         run: |
-          IGNORE_PATTERN=""
-          if [ -n "${{ inputs.check_config_language_ignore_files }}" ]; then
-            IGNORE_FILES='${{ inputs.check_config_language_ignore_files }}'
-            # Split comma-separated patterns into lines
-            PATTERNS=$(echo "$IGNORE_FILES" | tr ',' '\n')
-            # Wrap each pattern with --exclude=
-            IGNORE_PATTERN=$(echo "$PATTERNS" | sed "s/^/--exclude='/; s/$/'/" | tr '\n' ' ')
-          fi
+          OUTPUT=$(grep -oP '^langcode: \b(?!(?:en|und)\b)\w+' conf -R || true)
 
-          OUTPUT=$(grep -oP '^langcode: \b(?!(?:en|und)\b)\w+' conf -R $IGNORE_PATTERN || true)
+          # Ignore files if specified
+          if [ -n "${{ inputs.check_config_language_ignore_files }}" ] && [ -n "$OUTPUT" ]; then
+            IGNORE_PATTERN=$(echo '${{ inputs.check_config_language_ignore_files }}' | tr ',' '|')
+            OUTPUT=$(echo "$OUTPUT" | grep -vE "$IGNORE_PATTERN" || true)
+          fi
           if [ ! -z "$OUTPUT" ]; then
             echo "Found configuration that does not match the pattern 'langcode: (en|und)':" >> $GITHUB_STEP_SUMMARY
             echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
