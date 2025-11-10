@@ -22,13 +22,16 @@ on:
         required: false
       codecov_token:
         required: false
+      # This is used by drupal/helfi_azure_fs module.
+      flysystem_azure_connection_string:
+        required: false
 env:
   SYMFONY_DEPRECATIONS_HELPER: disabled
   COMPOSER_DISCARD_CHANGES: true
   COMPOSER_MIRROR_PATH_REPOS: 1
   CODECOV_TOKEN: ${{ secrets.codecov_token }}
   SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
-  FLYSYSTEM_AZURE_CONNECTION_STRING: ${{ secrets.FLYSYSTEM_AZURE_CONNECTION_STRING }}
+  FLYSYSTEM_AZURE_CONNECTION_STRING: ${{ secrets.flysystem_azure_connection_string }}
 jobs:
   build:
     runs-on: ubuntu-latest
