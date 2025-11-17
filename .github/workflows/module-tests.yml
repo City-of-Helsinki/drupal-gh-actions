@@ -63,9 +63,8 @@ jobs:
         working-directory: drupal
         run: |
           # We use mglaman/composer-drupal-lenient to patch modules that are
-          # not compatible with the latest core version.
-          # The package must be installed globally because otherwise it
-          # doesn't work.
+          # not compatible with the latest core version and the package must be
+          # installed globally.
           # @see https://github.com/mglaman/composer-drupal-lenient?tab=readme-ov-file#support-when-composerlock-removed
           composer global config --no-plugins allow-plugins.mglaman/composer-drupal-lenient true
           composer global require mglaman/composer-drupal-lenient
