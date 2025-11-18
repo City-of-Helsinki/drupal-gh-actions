@@ -82,8 +82,15 @@ jobs:
       - name: Install required composer dependencies
         working-directory: drupal
         run: |
-          docker compose exec -u 1001 app bash -c "composer config repositories.5 path module"
-          docker compose exec -u 1001 app bash -c "composer require drupal/$MODULE_NAME ${{ inputs.composer_dev_dependencies }} -W"
+          # We use mglaman/composer-drupal-lenient to patch modules that are
+          # not compatible with the latest core version.
+          # The package must be installed globally because otherwise it
+          # doesn't work.
+          # @see https://github.com/mglaman/composer-drupal-lenient?tab=readme-ov-file#support-when-composerlock-removed
+          docker compose exec app bash -c "composer global config --no-plugins allow-plugins.mglaman/composer-drupal-lenient true"
+          docker compose exec app bash -c "composer global require mglaman/composer-drupal-lenient"
+          docker compose exec app bash -c "composer config repositories.5 path module"
+          docker compose exec app bash -c "composer require drupal/$MODULE_NAME ${{ inputs.composer_dev_dependencies }} -W"
           # We use COMPOSER_MIRROR_PATH_REPOS=1 to mirror local repository
           # instead of symlinking it to prevent code coverage issues with
           # phpunit. Copy .git folder manually so codecov can generate line by
