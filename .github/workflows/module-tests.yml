@@ -117,7 +117,7 @@ jobs:
         run: |
           docker compose exec app php vendor/bin/phpunit \
             --bootstrap /app/public/core/tests/bootstrap.php \
-            -c $MODULE_FOLDER/phpunit.xml \
+            -c /app/public/modules/contrib/$MODULE_FOLDER/phpunit.xml \
             --coverage-clover=/app/coverage-base.xml \
             --testsuite unit,kernel
 
