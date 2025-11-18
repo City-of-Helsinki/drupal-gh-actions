@@ -43,10 +43,6 @@ jobs:
       - name: Install and start Stonehenge
         run: make up
 
-      - name: Parse $MODULE_NAME from composer.json
-        working-directory: module
-        run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
-
       - name: Clone platform
         run: |
           git clone --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
@@ -55,6 +51,11 @@ jobs:
       - uses: actions/checkout@v5
         with:
           path: 'drupal/module'
+
+      - name: Parse $MODULE_NAME from composer.json
+        working-directory: drupal/module
+        run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
+
 
       - name: Setup Docker compose environment variables
         working-directory: drupal
