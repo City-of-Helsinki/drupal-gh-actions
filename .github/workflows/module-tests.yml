@@ -78,6 +78,7 @@ jobs:
       - name: Install required composer dependencies
         working-directory: drupal
         run: |
+          docker compose exec app bash -c "ls -la"
           docker compose exec app bash -c "composer config repositories.5 path module"
           docker compose exec app bash -c "composer require drupal/$MODULE_NAME ${{ inputs.composer_dev_dependencies }} -W"
           # We use COMPOSER_MIRROR_PATH_REPOS=1 to mirror local repository
