@@ -33,224 +33,82 @@ env:
   SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
   FLYSYSTEM_AZURE_CONNECTION_STRING: ${{ secrets.flysystem_azure_connection_string }}
 jobs:
-  build:
+  tests:
     runs-on: ubuntu-latest
-    outputs:
-      module_folder: ${{ steps.module_folder.outputs.module_folder }}
-      module_name: ${{ steps.module_name.outputs.module_name }}
     steps:
       - uses: actions/checkout@v5
         with:
+          repository: druidfi/stonehenge
+
+      - name: Install and start Stonehenge
+        run: make up
+
+      - uses: actions/checkout@v5
+        with:
           path: 'module'
-      - name: Clone platform
-        run: |
-          git clone --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
-          rm -rf ./drupal/.git
 
       - name: Parse $MODULE_NAME from composer.json
         working-directory: module
         run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
 
-      - name: Store module folder
-        id: module_folder
-        run: echo "module_folder=$(pwd)/drupal/public/modules/contrib/$MODULE_NAME" >> "$GITHUB_OUTPUT"
+      - name: Clone platform
+        run: |
+          git clone --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
+          rm -rf ./drupal/.git
 
-      - name: Store module name
-        id: module_name
-        run: echo "module_name=$MODULE_NAME" >> "$GITHUB_OUTPUT"
+      - name: Setup Docker compose environment variables
+        working-directory: drupal
+        run: |
+          # Read existing compose profiles from .env file
+          source .env
+
+          # Make sure testing is always included in compose profiles.
+          if [ ! -n "$COMPOSE_PROFILES" ]; then
+            COMPOSE_PROFILES=testing
+          else
+            COMPOSE_PROFILES=$COMPOSE_PROFILES,testing
+          fi
+          echo "COMPOSE_PROFILES=$COMPOSE_PROFILES" >> $GITHUB_ENV
+
+      - name: Start compose project
+        working-directory: drupal
+        run: docker compose up -d --wait
 
       - name: Install required composer dependencies
         working-directory: drupal
         run: |
-          # We use mglaman/composer-drupal-lenient to patch modules that are
-          # not compatible with the latest core version and the package must be
-          # installed globally.
-          # @see https://github.com/mglaman/composer-drupal-lenient?tab=readme-ov-file#support-when-composerlock-removed
-          composer global config --no-plugins allow-plugins.mglaman/composer-drupal-lenient true
-          composer global require mglaman/composer-drupal-lenient
-          composer config repositories.5 path ../module
-          composer require drupal/$MODULE_NAME ${{ inputs.composer_dev_dependencies }} -W
+          docker compose exec app bash -c "composer config repositories.5 path ../module"
+          docker compose exec app bash -c "composer require drupal/$MODULE_NAME ${{ inputs.composer_dev_dependencies }} -W"
           # We use COMPOSER_MIRROR_PATH_REPOS=1 to mirror local repository
           # instead of symlinking it to prevent code coverage issues with
           # phpunit. Copy .git folder manually so codecov can generate line by
           # line coverage.
-          cp -r ../module/.git ${{ steps.module_folder.outputs.module_folder }}/
-
-      - name: Store build
-        uses: actions/upload-artifact@v4
-        with:
-          name: build
-          path: drupal
-          # Keep .git folder.
-          include-hidden-files: true
-
-  coding-standards:
-    runs-on: ubuntu-latest
-    needs: build
-    container:
-      image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
-      options: --hostname app --user 1001
-    env:
-      MODULE_FOLDER: ${{ needs.build.outputs.module_folder }}
-    steps:
-      - name: Download build
-        uses: actions/download-artifact@v4
-        with:
-          name: build
-          path: drupal
+          docker compose exec app bash -c "cp -r ../module/.git public/modules/contrib/$MODULE_NAME/"
 
       - name: Run PHPCS
         working-directory: drupal
         run: |
-          if [ ! -f "$MODULE_FOLDER/phpcs.xml" ]; then
-            ARGS='${{ inputs.phpcs_args }}'
-          else
-            # Remove any existing phpcs files and copy module's
-            # phpcs file to Drupal root.
-            rm -f phpcs.xml.dist
-            cp $MODULE_FOLDER/phpcs.xml .
-          fi
-          php vendor/bin/phpcs $MODULE_FOLDER $ARGS
+          docker compose exec app bash -c "vendor/bin/phpcs public/modules/contrib/$MODULE_NAME"
 
       - name: Run phpstan
-        working-directory: drupal
-        run: |
-          php vendor/bin/phpstan analyze -c $MODULE_FOLDER/phpstan.neon $MODULE_FOLDER
-
-  functional-tests:
-    runs-on: ubuntu-latest
-    needs: build
-    container:
-      image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
-      options: --hostname app --user 1001
-    env:
-      MODULE_FOLDER: ${{ needs.build.outputs.module_folder }}
-      MODULE_NAME: ${{ needs.build.outputs.module_name }}
-    services:
-      db:
-        image: mysql:8
-        env:
-          MYSQL_USER: drupal
-          MYSQL_PASSWORD: drupal
-          MYSQL_DATABASE: drupal
-          MYSQL_ROOT_PASSWORD: drupal
-        ports:
-          - 3306:3306
-        options: --entrypoint "/docker-entrypoint.sh --skip-log-bin --character-set-server=utf8mb4 --collation-server=utf8mb4_swedish_ci"
-      chromium:
-        image: selenium/standalone-chromium
-        env:
-          SE_NODE_OVERRIDE_MAX_SESSIONS: "true"
-          SE_NODE_MAX_SESSIONS: "16"
-          SE_START_XVFB: "false"
-          SE_START_VNC: "false"
-          SE_SESSION_RETRY_INTERVAL: "1"
-          SE_SESSION_REQUEST_TIMEOUT: "10"
-    steps:
-      - name: Download build
-        uses: actions/download-artifact@v4
-        with:
-          name: build
-          path: drupal
-        # Actions worker overrides the default entrypoint with "tail -f /dev/null", so
-        # we have to start services manually.
-      - name: Start services
-        run: WEBROOT=$(pwd)/drupal/public entrypoint &
+        run: docker compose exec app bash -c "vendor/bin/phpstan analyze -c public/modules/contrib/$MODULE_NAME/phpstan.neon public/modules/contrib/$MODULE_NAME"
 
       - name: Install Drupal
-        working-directory: drupal
         run: |
-          # Execute flag is lost due to actions/download-artifact.
-          chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php
-          vendor/bin/drush --yes -v site-install minimal --db-url="$SIMPLETEST_DB"
-          vendor/bin/drush en $MODULE_NAME -y
-
-      - name: Set browsertest output directory
-        run: echo "BROWSERTEST_OUTPUT_DIRECTORY=$(pwd)/drupal/public/sites/simpletest" >> $GITHUB_ENV
+          docker compose exec app bash -c "drush si -y"
+          docker compose exec app bash -c "drush en $MODULE_NAME"
 
       - name: Run PHPUnit tests
-        working-directory: drupal
         run: |
-          php vendor/bin/phpunit \
+          docker compose exec php vendor/bin/phpunit \
             --bootstrap $(pwd)/public/core/tests/bootstrap.php \
             -c $MODULE_FOLDER/phpunit.xml \
-            --testsuite functional,functional-javascript,existing-site,existing-site-javascript
-
-      - name: Create an artifact from test report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: results-${{ inputs.php_version }}
-          path: ${{ env.BROWSERTEST_OUTPUT_DIRECTORY }}
-          retention-days: 1
-
-  unit-tests:
-    runs-on: ubuntu-latest
-    needs: build
-    container:
-      image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
-      options: --hostname app --user 1001
-    env:
-      MODULE_FOLDER: ${{ needs.build.outputs.module_folder }}
-    services:
-      db:
-        image: mysql:8
-        env:
-          MYSQL_USER: drupal
-          MYSQL_PASSWORD: drupal
-          MYSQL_DATABASE: drupal
-          MYSQL_ROOT_PASSWORD: drupal
-        ports:
-          - 3306:3306
-    steps:
-      - name: Download build
-        uses: actions/download-artifact@v4
-        with:
-          name: build
-          path: drupal
-
-      - name: Run PHPUnit tests
-        working-directory: drupal
-        run: |
-          php vendor/bin/phpunit \
-            --bootstrap $(pwd)/public/core/tests/bootstrap.php \
-            -c $MODULE_FOLDER/phpunit.xml \
-            --coverage-clover=$MODULE_FOLDER/coverage.xml \
+            --coverage-clover=/app/coverage-base.xml \
             --testsuite unit,kernel
 
-      - name: Fix coverage paths
-        if: ${{ env.SONARCLOUD_TOKEN }}
-        run: sed -i "s|${{ env.MODULE_FOLDER }}/||g" $MODULE_FOLDER/coverage.xml
-
-      - name: Store phpunit reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: phpunit-report
-          path: |
-            ${{ env.MODULE_FOLDER }}/coverage.xml
-
-      - uses: codecov/codecov-action@v5
-        if: ${{ env.CODECOV_TOKEN }}
-        with:
-          fail_ci_if_error: true
-          directory: ${{ env.MODULE_FOLDER }}
-          token: ${{ secrets.codecov_token }}
-
-  # This is split into separate job because we run tests inside a Docker
-  # container and sonarqube-scan-action has a dependency to Java.
-  sonarcloud:
-    needs: unit-tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Download coverage.xml
-        if: ${{ env.SONARCLOUD_TOKEN }}
-        uses: actions/download-artifact@v4
-        with:
-          name: phpunit-report
+      - name: Export coverage.xml
+        run: |
+          docker compose exec app bash -c "cat /app/coverage-base.xml" > coverage.xml
 
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
@@ -258,3 +116,14 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
 
+      - name: Export logs
+        if: always()
+        run: docker compose logs app > results/service.log
+
+      - name: Create an artifact from test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results
+          path: results/
+          retention-days: 1
