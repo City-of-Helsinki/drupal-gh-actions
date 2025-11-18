@@ -44,7 +44,7 @@ jobs:
           path: 'module'
       - name: Clone platform
         run: |
-          git clone --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
+          git clone --branch UHF-11502 --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
           rm -rf ./drupal/.git
 
       - name: Parse $MODULE_NAME from composer.json
