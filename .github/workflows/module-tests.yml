@@ -1,6 +1,11 @@
 on:
   workflow_call:
     inputs:
+      compose_files:
+        description: 'Compose files'
+        default: 'compose.yaml:compose.ci.yaml'
+        required: false
+        type: string
       php_version:
         description: 'Used PHP version'
         required: true
@@ -19,8 +24,6 @@ on:
         default: '--standard=Drupal --extensions=php,module,install,theme,inc'
     secrets:
       sonarcloud_token:
-        required: false
-      codecov_token:
         required: false
       # This is used by drupal/helfi_azure_fs module.
       flysystem_azure_connection_string:
@@ -45,7 +48,7 @@ jobs:
 
       - name: Clone platform
         run: |
-          git clone --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
+          git clone --branch UHF-11502 --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
           rm -rf ./drupal/.git
 
       - uses: actions/checkout@v5
@@ -69,6 +72,7 @@ jobs:
           else
             COMPOSE_PROFILES=$COMPOSE_PROFILES,testing
           fi
+          echo "COMPOSE_FILE=${{ inputs.compose_files }}" >> $GITHUB_ENV
           echo "COMPOSE_PROFILES=$COMPOSE_PROFILES" >> $GITHUB_ENV
 
       - name: Start compose project
