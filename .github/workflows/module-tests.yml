@@ -43,10 +43,6 @@ jobs:
       - name: Install and start Stonehenge
         run: make up
 
-      - uses: actions/checkout@v5
-        with:
-          path: 'module'
-
       - name: Parse $MODULE_NAME from composer.json
         working-directory: module
         run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
@@ -55,6 +51,10 @@ jobs:
         run: |
           git clone --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
           rm -rf ./drupal/.git
+
+      - uses: actions/checkout@v5
+        with:
+          path: 'drupal/module'
 
       - name: Setup Docker compose environment variables
         working-directory: drupal
@@ -77,13 +77,13 @@ jobs:
       - name: Install required composer dependencies
         working-directory: drupal
         run: |
-          docker compose exec app bash -c "composer config repositories.5 path ../module"
+          docker compose exec app bash -c "composer config repositories.5 path module"
           docker compose exec app bash -c "composer require drupal/$MODULE_NAME ${{ inputs.composer_dev_dependencies }} -W"
           # We use COMPOSER_MIRROR_PATH_REPOS=1 to mirror local repository
           # instead of symlinking it to prevent code coverage issues with
           # phpunit. Copy .git folder manually so codecov can generate line by
           # line coverage.
-          docker compose exec app bash -c "cp -r ../module/.git public/modules/contrib/$MODULE_NAME/"
+          docker compose exec app bash -c "cp -r module/.git public/modules/contrib/$MODULE_NAME/"
 
       - name: Run PHPCS
         working-directory: drupal
@@ -91,14 +91,17 @@ jobs:
           docker compose exec app bash -c "vendor/bin/phpcs public/modules/contrib/$MODULE_NAME"
 
       - name: Run phpstan
+        working-directory: drupal
         run: docker compose exec app bash -c "vendor/bin/phpstan analyze -c public/modules/contrib/$MODULE_NAME/phpstan.neon public/modules/contrib/$MODULE_NAME"
 
       - name: Install Drupal
+        working-directory: drupal
         run: |
           docker compose exec app bash -c "drush si -y"
           docker compose exec app bash -c "drush en $MODULE_NAME"
 
       - name: Run PHPUnit tests
+        working-directory: drupal
         run: |
           docker compose exec php vendor/bin/phpunit \
             --bootstrap $(pwd)/public/core/tests/bootstrap.php \
@@ -107,6 +110,7 @@ jobs:
             --testsuite unit,kernel
 
       - name: Export coverage.xml
+        working-directory: drupal
         run: |
           docker compose exec app bash -c "cat /app/coverage-base.xml" > coverage.xml
 
