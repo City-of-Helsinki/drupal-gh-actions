@@ -57,7 +57,7 @@ jobs:
           path: 'drupal/module'
 
       - name: Parse $MODULE_NAME from composer.json
-        working-directory: module
+        working-directory: drupal/module
         run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
 
       - name: Store module name
@@ -124,6 +124,7 @@ jobs:
 
   unit-tests:
     runs-on: ubuntu-latest
+    needs: build
     env:
       MODULE_NAME: ${{ needs.build.outputs.module_name }}
     steps:
