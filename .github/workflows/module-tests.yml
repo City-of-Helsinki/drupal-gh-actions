@@ -100,21 +100,32 @@ jobs:
       - name: Run PHPCS
         working-directory: drupal
         run: |
-          docker compose exec app bash -c "vendor/bin/phpcs public/modules/contrib/$MODULE_NAME"
+          MODULE_FOLDER=/app/public/modules/contrib/$MODULE_NAME
+
+          if [ ! -f "$MODULE_FOLDER/phpcs.xml" ]; then
+            ARGS='${{ inputs.phpcs_args }}'
+          else
+            # Remove any existing phpcs files and copy module's
+            # phpcs file to Drupal root.
+            docker compose exec app bash -c "rm -f phpcs.xml.dist"
+            docker compose exec app bash -c "cp $MODULE_FOLDER/phpcs.xml ."
+          fi
+          docker compose exec app php vendor/bin/phpcs $MODULE_FOLDER $ARGS
 
       - name: Run phpstan
         working-directory: drupal
-        run: docker compose exec app bash -c "vendor/bin/phpstan analyze -c public/modules/contrib/$MODULE_NAME/phpstan.neon public/modules/contrib/$MODULE_NAME"
+        run: docker compose exec app php vendor/bin/phpstan analyze -c public/modules/contrib/$MODULE_NAME/phpstan.neon public/modules/contrib/$MODULE_NAME
 
       - name: Install Drupal
         working-directory: drupal
         run: |
-          docker compose exec app bash -c "drush si -y"
-          docker compose exec app bash -c "drush en $MODULE_NAME"
+          docker compose exec app bash -c "vendor/bin/drush si -y"
+          docker compose exec app bash -c "vendor/bin/drush en $MODULE_NAME"
 
       - name: Run PHPUnit tests
         working-directory: drupal
         run: |
+          docker compose exec app bash -c "mkdir -p /app/results"
           docker compose exec app php vendor/bin/phpunit \
             --bootstrap /app/public/core/tests/bootstrap.php \
             -c /app/public/modules/contrib/$MODULE_NAME/phpunit.xml \
@@ -127,16 +138,19 @@ jobs:
           docker compose exec app bash -c "cat /app/coverage-base.xml" > coverage.xml
 
       - name: SonarQube Scan
+        working-directory: drupal
         if: ${{ env.SONARCLOUD_TOKEN }}
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
 
       - name: Export logs
+        working-directory: drupal
         if: always()
         run: docker compose logs app > results/service.log
 
       - name: Create an artifact from test report
+        working-directory: drupal
         uses: actions/upload-artifact@v4
         if: always()
         with:
