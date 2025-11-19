@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     container:
-      image: ${{ env.DRUPAL_IMAGE }}
+      image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
       options: --hostname app --user 1001
     env:
       MODULE_NAME: ${{ needs.build.outputs.module_name }}
