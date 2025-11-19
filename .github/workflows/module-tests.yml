@@ -179,6 +179,65 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Unit test results
+          name: Unit test results ${{ inputs.php_version }}
           path: drupal/results/
+          retention-days: 1
+
+  functional-tests:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      MODULE_NAME: ${{ needs.build.outputs.module_name }}
+    steps:
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: drupal
+
+      - name: Install and start Stonehenge
+        working-directory: drupal/stonehenge
+        run: make up
+
+      - name: Setup Docker compose environment variables
+        run: |
+          # Read existing compose profiles from .env file
+          source .env
+
+          # Make sure testing is always included in compose profiles.
+          if [ ! -n "$COMPOSE_PROFILES" ]; then
+            COMPOSE_PROFILES=testing
+          else
+            COMPOSE_PROFILES=$COMPOSE_PROFILES,testing
+          fi
+          echo "COMPOSE_FILE=${{ inputs.compose_files }}" >> $GITHUB_ENV
+          echo "COMPOSE_PROFILES=$COMPOSE_PROFILES" >> $GITHUB_ENV
+
+      - name: Start compose project
+        working-directory: drupal
+        run: docker compose up -d --wait
+
+      - name: Install Drupal
+        working-directory: drupal
+        run: |
+          # Execute flag is lost due to actions/download-artifact.
+          docker compose exec app "chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php"
+          docker compose exec app php vendor/bin/drush --yes -v site-install minimal
+          docker compose exec app php vendor/bin/drush en $MODULE_NAME -y
+
+      - name: Run PHPUnit tests
+        working-directory: drupal
+        run: |
+          docker compose exec app bash -c "mkdir -p /app/results"
+          docker compose exec app php vendor/bin/phpunit \
+            --bootstrap /app/public/core/tests/bootstrap.php \
+            -c /app/public/modules/contrib/$MODULE_NAME/phpunit.xml \
+            --testsuite functional,functional-javascript,existing-site,existing-site-javascript
+
+      - name: Create an artifact from test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Functioanl test results ${{ inputs.php_version }}
+          path: drupal/public/sites/default/files/simpletest
           retention-days: 1
