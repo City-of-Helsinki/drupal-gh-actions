@@ -134,13 +134,13 @@ jobs:
 
       - name: Export coverage.xml
         working-directory: drupal
-        run: docker compose exec app bash -c "cat /app/coverage-base.xml" > ../module/coverage.xml
+        run: docker compose exec app bash -c "cat /app/coverage-base.xml" > module/coverage.xml
 
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
         uses: SonarSource/sonarqube-scan-action@v6
         with:
-          projectBaseDir: module
+          projectBaseDir: drupal/module
         env:
           SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
 
