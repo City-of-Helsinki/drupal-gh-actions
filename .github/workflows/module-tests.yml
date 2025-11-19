@@ -134,11 +134,10 @@ jobs:
 
       - name: Export coverage.xml
         working-directory: drupal
-        run: docker compose exec app bash -c "cat /app/coverage-base.xml" > module/coverage.xml
-
-      - name: Fix coverage paths
-        if: ${{ env.SONARCLOUD_TOKEN }}
-        run: sed -i "s|/app/public/modules/contrib/${{ env.MODULE_NAME }}/||g" module/coverage.xml
+        run: |
+          docker compose exec app bash -c "cat /app/coverage-base.xml" > module/coverage.xml
+          # Fix coverage paths.
+          sed -i "s|/app/public/modules/contrib/${{ env.MODULE_NAME }}/||g" module/coverage.xml
 
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
