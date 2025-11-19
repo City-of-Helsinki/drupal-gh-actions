@@ -200,6 +200,7 @@ jobs:
         run: make up
 
       - name: Setup Docker compose environment variables
+        working-directory: drupal
         run: |
           # Read existing compose profiles from .env file
           source .env
