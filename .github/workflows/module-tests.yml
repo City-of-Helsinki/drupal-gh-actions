@@ -35,49 +35,34 @@ env:
   CODECOV_TOKEN: ${{ secrets.codecov_token }}
   SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
   FLYSYSTEM_AZURE_CONNECTION_STRING: ${{ secrets.flysystem_azure_connection_string }}
+  DRUPAL_IMAGE: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
 jobs:
-  tests:
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      module_name: ${{ steps.module_name.outputs.module_name }}
     steps:
       - uses: actions/checkout@v5
         with:
           repository: druidfi/stonehenge
+          path: drupal/stonehenge
 
-      - name: Install and start Stonehenge
-        run: make up
+      - uses: actions/checkout@v5
+        with:
+          path: 'drupal/module'
 
       - name: Clone platform
         run: |
           git clone --branch UHF-11502 --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
           rm -rf ./drupal/.git
 
-      - uses: actions/checkout@v5
-        with:
-          path: 'drupal/module'
-
       - name: Parse $MODULE_NAME from composer.json
-        working-directory: drupal/module
+        working-directory: module
         run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
 
-
-      - name: Setup Docker compose environment variables
-        working-directory: drupal
-        run: |
-          # Read existing compose profiles from .env file
-          source .env
-
-          # Make sure testing is always included in compose profiles.
-          if [ ! -n "$COMPOSE_PROFILES" ]; then
-            COMPOSE_PROFILES=testing
-          else
-            COMPOSE_PROFILES=$COMPOSE_PROFILES,testing
-          fi
-          echo "COMPOSE_FILE=${{ inputs.compose_files }}" >> $GITHUB_ENV
-          echo "COMPOSE_PROFILES=$COMPOSE_PROFILES" >> $GITHUB_ENV
-
-      - name: Start compose project
-        working-directory: drupal
-        run: docker compose up -d --wait
+      - name: Store module name
+        id: module_name
+        run: echo "module_name=$MODULE_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Install required composer dependencies
         working-directory: drupal
@@ -87,44 +72,81 @@ jobs:
           # The package must be installed globally because otherwise it
           # doesn't work.
           # @see https://github.com/mglaman/composer-drupal-lenient?tab=readme-ov-file#support-when-composerlock-removed
-          docker compose exec app bash -c "composer global config --no-plugins allow-plugins.mglaman/composer-drupal-lenient true"
-          docker compose exec app bash -c "composer global require mglaman/composer-drupal-lenient"
-          docker compose exec app bash -c "composer config repositories.5 path module"
-          docker compose exec app bash -c "composer require drupal/$MODULE_NAME ${{ inputs.composer_dev_dependencies }} -W"
+          composer global config --no-plugins allow-plugins.mglaman/composer-drupal-lenient true
+          composer global require mglaman/composer-drupal-lenient
+          composer config repositories.5 path module
+          composer require drupal/$MODULE_NAME ${{ inputs.composer_dev_dependencies }} -W
           # We use COMPOSER_MIRROR_PATH_REPOS=1 to mirror local repository
           # instead of symlinking it to prevent code coverage issues with
           # phpunit. Copy .git folder manually so codecov can generate line by
           # line coverage.
-          docker compose exec app bash -c "cp -r module/.git public/modules/contrib/$MODULE_NAME/"
+          cp -r module/.git public/modules/contrib/$MODULE_NAME/
+
+      - name: Store build
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: drupal
+          # Keep .git folder.
+          include-hidden-files: true
+
+  coding-standards:
+    runs-on: ubuntu-latest
+    needs: build
+    container:
+      image: ${{ env.DRUPAL_IMAGE }}
+      options: --hostname app --user 1001
+    env:
+      MODULE_NAME: ${{ needs.build.outputs.module_name }}
+    steps:
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: drupal
 
       - name: Run PHPCS
         working-directory: drupal
         run: |
-          MODULE_FOLDER=/app/public/modules/contrib/$MODULE_NAME
-
-          if [ ! -f "$MODULE_FOLDER/phpcs.xml" ]; then
+          if [ ! -f "public/modules/contrib/$MODULE_NAME/phpcs.xml" ]; then
             ARGS='${{ inputs.phpcs_args }}'
           else
             # Remove any existing phpcs files and copy module's
             # phpcs file to Drupal root.
-            docker compose exec app bash -c "rm -f phpcs.xml.dist"
-            docker compose exec app bash -c "cp $MODULE_FOLDER/phpcs.xml ."
+            rm -f phpcs.xml.dist
+            cp public/modules/contrib/$MODULE_NAME/phpcs.xml .
           fi
-          docker compose exec app php vendor/bin/phpcs $MODULE_FOLDER $ARGS
+          php vendor/bin/phpcs public/modules/contrib/$MODULE_NAME $ARGS
 
       - name: Run phpstan
         working-directory: drupal
-        run: docker compose exec app php vendor/bin/phpstan analyze -c public/modules/contrib/$MODULE_NAME/phpstan.neon public/modules/contrib/$MODULE_NAME
+        run: php vendor/bin/phpstan analyze -c public/modules/contrib/$MODULE_NAME/phpstan.neon public/modules/contrib/$MODULE_NAME
 
-      - name: Install Drupal
+  unit-tests:
+    runs-on: ubuntu-latest
+    env:
+      MODULE_NAME: ${{ needs.build.outputs.module_name }}
+    steps:
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: drupal
+
+      - name: Install and start Stonehenge
+        working-directory: drupal/stonehenge
+        run: make up
+
+      - name: Start compose project
         working-directory: drupal
-        run: |
-          docker compose exec app bash -c "vendor/bin/drush si -y"
-          docker compose exec app bash -c "vendor/bin/drush en $MODULE_NAME"
+        run: docker compose up -d --wait
 
       - name: Run PHPUnit tests
         working-directory: drupal
         run: |
+          # Execute flag is lost due to actions/download-artifact.
+          docker compose exec app bash -c "chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php"
+
           docker compose exec app bash -c "mkdir -p /app/results"
           docker compose exec app php vendor/bin/phpunit \
             --bootstrap /app/public/core/tests/bootstrap.php \
@@ -156,6 +178,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: results
+          name: Unit test results
           path: drupal/results/
           retention-days: 1
