@@ -140,7 +140,7 @@ jobs:
 
       - name: Start compose project
         working-directory: drupal
-        run: docker compose up -d --wait
+        run: COMPOSE_FILE=${{ inputs.compose_files }} docker compose up -d --wait
 
       - name: Run PHPUnit tests
         working-directory: drupal
