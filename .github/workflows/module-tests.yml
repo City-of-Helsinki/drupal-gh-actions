@@ -222,7 +222,7 @@ jobs:
         working-directory: drupal
         run: |
           # Execute flag is lost due to actions/download-artifact.
-          docker compose exec app "chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php"
+          docker compose exec app bash -c "chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php"
           docker compose exec app php vendor/bin/drush --yes -v site-install minimal
           docker compose exec app php vendor/bin/drush en $MODULE_NAME -y
 
