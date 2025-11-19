@@ -134,13 +134,13 @@ jobs:
 
       - name: Export coverage.xml
         working-directory: drupal
-        run: |
-          docker compose exec app bash -c "cat /app/coverage-base.xml" > coverage.xml
+        run: docker compose exec app bash -c "cat /app/coverage-base.xml" > ../module/coverage.xml
 
       - name: SonarQube Scan
-        working-directory: drupal
         if: ${{ env.SONARCLOUD_TOKEN }}
         uses: SonarSource/sonarqube-scan-action@v6
+        with:
+          projectBaseDir: module
         env:
           SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
 
@@ -150,10 +150,9 @@ jobs:
         run: docker compose logs app > results/service.log
 
       - name: Create an artifact from test report
-        working-directory: drupal
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: results
-          path: results/
+          path: drupal/results/
           retention-days: 1
