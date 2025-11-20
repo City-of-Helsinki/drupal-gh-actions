@@ -231,6 +231,7 @@ jobs:
         run: |
           docker compose exec app bash -c "mkdir -p /app/results"
           docker compose exec app php public/core/scripts/run-tests.sh \
+            --php /usr/bin/php \
             --suppress-deprecations \
             --verbose \
             --url $SIMPLETEST_BASE_URL \
