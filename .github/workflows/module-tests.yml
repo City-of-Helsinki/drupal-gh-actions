@@ -230,11 +230,10 @@ jobs:
         run: |
 
           docker compose exec app bash -c "mkdir -p /app/results"
-          docker compose exec app bash -c "php public/core/scripts/run-tests.sh
-            --php /usr/bin/php
-            --concurrency 4 \
+          docker compose exec app bash -c "php public/core/scripts/run-tests.sh --php /usr/bin/php
+            --concurrency 4
             --suppress-deprecations
-            --verbose \
+            --verbose
             --url \$SIMPLETEST_BASE_URL
             --dburl \$SIMPLETEST_DB
             --color
