@@ -239,7 +239,7 @@ jobs:
             --dburl \$SIMPLETEST_DB
             --color
             --sqlite /tmp/sqlite
-            --types PHPUnit-Functional PHPUnit-Functional-Javascript,PHPUnit-Existing-Site,PHPUnit-Existing-Site-Javascript
+            --types PHPUnit-Functional PHPUnit-FunctionalJavascript,PHPUnit-ExistingSite,PHPUnit-ExistingSiteJavascript
             --directory /app/public/modules/contrib/$MODULE_NAME/"
 
       - name: Create an artifact from test report
