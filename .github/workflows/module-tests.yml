@@ -228,18 +228,8 @@ jobs:
       - name: Run PHPUnit tests
         working-directory: drupal
         run: |
-
           docker compose exec app bash -c "mkdir -p /app/results"
-          docker compose exec app bash -c "php public/core/scripts/run-tests.sh --php /usr/bin/php
-            --concurrency 4
-            --suppress-deprecations
-            --verbose
-            --url \$SIMPLETEST_BASE_URL
-            --dburl \$SIMPLETEST_DB
-            --color
-            --sqlite /tmp/sqlite
-            --types PHPUnit-Functional PHPUnit-FunctionalJavascript,PHPUnit-ExistingSite,PHPUnit-ExistingSiteJavascript
-            --directory /app/public/modules/contrib/$MODULE_NAME/"
+          docker compose exec app bash -c "php public/core/scripts/run-tests.sh --php /usr/bin/php --concurrency 4 --suppress-deprecations --verbose --url \$SIMPLETEST_BASE_URL --dburl \$SIMPLETEST_DB --color --sqlite /tmp/sqlite --types PHPUnit-Functional PHPUnit-FunctionalJavascript,PHPUnit-ExistingSite,PHPUnit-ExistingSiteJavascript --directory /app/public/modules/contrib/$MODULE_NAME/"
 
       - name: Create an artifact from test report
         uses: actions/upload-artifact@v4
