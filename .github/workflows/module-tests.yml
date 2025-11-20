@@ -230,10 +230,15 @@ jobs:
         working-directory: drupal
         run: |
           docker compose exec app bash -c "mkdir -p /app/results"
-          docker compose exec app php vendor/bin/phpunit \
-            --bootstrap /app/public/core/tests/bootstrap.php \
-            -c /app/public/modules/contrib/$MODULE_NAME/phpunit.xml \
-            --testsuite functional,functional-javascript,existing-site,existing-site-javascript
+          docker compose exec app php public/core/scripts/run-tests.sh \
+            --suppress-deprecations \
+            --verbose \
+            --url $SIMPLETEST_BASE_URL \
+            --dburl $SIMPLETEST_DB \
+            --color \
+            --sqlite /tmp/sqlite \
+            --types PHPUnit-Functional PHPUnit-Functional-Javascript,PHPUnit-Existing-Site,PHPUnit-Existing-Site-Javascript \
+            --directory /app/public/modules/contrib/$MODULE_NAME/
 
       - name: Create an artifact from test report
         uses: actions/upload-artifact@v4
