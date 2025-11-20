@@ -230,16 +230,16 @@ jobs:
         run: |
 
           docker compose exec app bash -c "mkdir -p /app/results"
-          docker compose exec app bash -c "php public/core/scripts/run-tests.sh \
-            --php /usr/bin/php \
+          docker compose exec app bash -c "php public/core/scripts/run-tests.sh
+            --php /usr/bin/php
             --concurrency 4 \
-            --suppress-deprecations \
+            --suppress-deprecations
             --verbose \
-            --url \$SIMPLETEST_BASE_URL \
-            --dburl \$SIMPLETEST_DB \
-            --color \
-            --sqlite /tmp/sqlite \
-            --types PHPUnit-Functional PHPUnit-Functional-Javascript,PHPUnit-Existing-Site,PHPUnit-Existing-Site-Javascript \
+            --url \$SIMPLETEST_BASE_URL
+            --dburl \$SIMPLETEST_DB
+            --color
+            --sqlite /tmp/sqlite
+            --types PHPUnit-Functional PHPUnit-Functional-Javascript,PHPUnit-Existing-Site,PHPUnit-Existing-Site-Javascript
             --directory /app/public/modules/contrib/$MODULE_NAME/"
 
       - name: Create an artifact from test report
