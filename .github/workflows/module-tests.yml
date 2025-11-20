@@ -38,6 +38,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
+      options: --hostname app --user 1001
     outputs:
       module_name: ${{ steps.module_name.outputs.module_name }}
     steps:
