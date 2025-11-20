@@ -29,6 +29,8 @@ on:
       flysystem_azure_connection_string:
         required: false
 env:
+  COMPOSER_DISCARD_CHANGES: true
+  COMPOSER_MIRROR_PATH_REPOS: 1
   CODECOV_TOKEN: ${{ secrets.codecov_token }}
   SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
   FLYSYSTEM_AZURE_CONNECTION_STRING: ${{ secrets.flysystem_azure_connection_string }}
@@ -229,6 +231,7 @@ jobs:
           docker compose exec app bash -c "mkdir -p /app/results"
           docker compose exec app bash -c "php public/core/scripts/run-tests.sh \
             --php /usr/bin/php \
+            --concurrency 4 \
             --suppress-deprecations \
             --verbose \
             --url $SIMPLETEST_BASE_URL \
