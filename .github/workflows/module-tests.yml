@@ -230,7 +230,7 @@ jobs:
         run: |
           docker compose exec app bash -c "mkdir -p /app/public/sites/simpletest"
           # Make sure we have write access to simpletest folder.
-          docker compose exec app -u root bash -c "chmod 777 -R /app/public/sites/simpletest"
+          docker compose exec -u root app bash -c "chmod 777 -R /app/public/sites/simpletest"
           docker compose exec app bash -c "php public/core/scripts/run-tests.sh --php /usr/bin/php --concurrency 4 --suppress-deprecations --verbose --url \$SIMPLETEST_BASE_URL --dburl \$SIMPLETEST_DB --color --sqlite /tmp/sqlite --types PHPUnit-Functional PHPUnit-FunctionalJavascript,PHPUnit-ExistingSite,PHPUnit-ExistingSiteJavascript --directory /app/public/modules/contrib/$MODULE_NAME/"
 
       - name: Create an artifact from test report
