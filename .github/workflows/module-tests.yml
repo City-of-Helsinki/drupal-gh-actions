@@ -237,10 +237,15 @@ jobs:
             -c /app/public/modules/contrib/$MODULE_NAME/phpunit.xml \
             --testsuite functional,functional-javascript,existing-site,existing-site-javascript
 
+      - name: Export logs
+        working-directory: drupal
+        if: always()
+        run: docker compose logs app > results/service.log
+
       - name: Create an artifact from test report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Functioanl test results ${{ inputs.php_version }}
-          path: drupal/public/sites/default/files/simpletest
+          name: Functional test results ${{ inputs.php_version }}
+          path: drupal/results
           retention-days: 1
