@@ -140,7 +140,7 @@ jobs:
 
       - name: Write app secrets
         working-directory: drupal
-        run: echo ${{ secrets.app_secrets }} > .secrets.json
+        run: echo "${{ secrets.app_secrets }}" > .secrets.json
 
       - name: Start compose project
         working-directory: drupal
@@ -220,7 +220,7 @@ jobs:
 
       - name: Write app secrets
         working-directory: drupal
-        run: echo ${{ secrets.app_secrets }} > .secrets.json
+        run: echo "${{ secrets.app_secrets }}" > .secrets.json
 
       - name: Start compose project
         working-directory: drupal
