@@ -25,15 +25,13 @@ on:
     secrets:
       sonarcloud_token:
         required: false
-      # This is used by drupal/helfi_azure_fs module.
-      flysystem_azure_connection_string:
+      base64_app_secrets:
         required: false
 env:
   COMPOSER_DISCARD_CHANGES: true
   COMPOSER_MIRROR_PATH_REPOS: 1
   CODECOV_TOKEN: ${{ secrets.codecov_token }}
   SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
-  FLYSYSTEM_AZURE_CONNECTION_STRING: ${{ secrets.flysystem_azure_connection_string }}
   DRUPAL_IMAGE: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
 jobs:
   build:
@@ -140,6 +138,10 @@ jobs:
         working-directory: drupal/stonehenge
         run: make up
 
+      - name: Write app secrets
+        working-directory: drupal
+        run: echo "${{ secrets.base64_app_secrets }}" | base64 --decode > .secrets.json
+
       - name: Start compose project
         working-directory: drupal
         run: COMPOSE_FILE=${{ inputs.compose_files }} docker compose up -d --wait
@@ -215,6 +217,10 @@ jobs:
           fi
           echo "COMPOSE_FILE=${{ inputs.compose_files }}" >> $GITHUB_ENV
           echo "COMPOSE_PROFILES=$COMPOSE_PROFILES" >> $GITHUB_ENV
+
+      - name: Write app secrets
+        working-directory: drupal
+        run: echo "${{ secrets.base64_app_secrets }}" | base64 --decode > .secrets.json
 
       - name: Start compose project
         working-directory: drupal

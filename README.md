@@ -76,7 +76,11 @@ Available configuration:
 
 Required secrets:
 
-- `codecov_token`: Project's codecov token. Can be found from project's Configuration -> General on Codecov.
+- `sonarcloud_token`: Project's SonarCloud token.
+
+Optional secrets:
+
+- `base64_app_secrets`: A base64 encoded JSON string. For example `{"my_key": "my value"}`. These will be written to project's root in a `.secrets.json` file and can be accessed in tests using `Drupal\Tests\helfi_api_base\Traits\SecretsTrait`.
 
 ```yaml
 # .github/workflows/ci.yml
@@ -95,7 +99,7 @@ jobs:
     with:
       php_version: ${{ matrix.php-versions }}
     secrets:
-      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+      sonarcloud_token: ${{ secrets.SONARCLOUD_TOKEN }}
 ```
 
 ## NPM Audit
