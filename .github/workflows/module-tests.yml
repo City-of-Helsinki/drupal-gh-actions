@@ -25,7 +25,7 @@ on:
     secrets:
       sonarcloud_token:
         required: false
-      app_secrets:
+      base64_app_secrets:
         required: false
 env:
   COMPOSER_DISCARD_CHANGES: true
@@ -140,7 +140,7 @@ jobs:
 
       - name: Write app secrets
         working-directory: drupal
-        run: echo "${{ secrets.app_secrets }}" > .secrets.json
+        run: echo "${{ secrets.base64_app_secrets }}" | base64 --decode > .secrets.json
 
       - name: Start compose project
         working-directory: drupal
@@ -220,7 +220,7 @@ jobs:
 
       - name: Write app secrets
         working-directory: drupal
-        run: echo '${{ secrets.app_secrets }}' > .secrets.json
+        run: echo "${{ secrets.base64_app_secrets }}" | base64 --decode > .secrets.json
 
       - name: Start compose project
         working-directory: drupal
