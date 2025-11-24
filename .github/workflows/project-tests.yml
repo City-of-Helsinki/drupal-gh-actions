@@ -108,6 +108,7 @@ jobs:
         run: |
           docker compose exec app bash -c "mkdir -p /app/results"
           docker compose exec app bash -c "mkdir -p tests/dtt/src/ExistingSite tests/dtt/src/ExistingSiteJavascript"
+          docker compose exec app bash -c "touch /app/coverage-base.xml"
 
           PHPUNIT_EXTRA_ARGS=
           # PHPUnit 10.5+ fails to "Incorrect filter configuration" error if we
@@ -115,7 +116,6 @@ jobs:
           HAS_UNIT_TESTS=$(vendor/bin/phpunit -c /app/phpunit.xml.dist --list-tests --testsuite unit,kernel | tail -n +4)
 
           if [ -n "$HAS_UNIT_TESTS" ]; then
-            docker compose exec app bash -c "touch /app/coverage-base.xml"
             PHPUNIT_EXTRA_ARGS=--coverage-clover=/app/coverage-base.xml
           fi
           docker compose exec app bash -c "vendor/bin/phpunit -c /app/phpunit.xml.dist $PHPUNIT_EXTRA_ARGS"
@@ -123,6 +123,7 @@ jobs:
       - name: Export coverage.xml
         run: |
           docker compose exec app bash -c "cat /app/coverage-base.xml" > coverage.xml
+          cat coverage.xml
 
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
