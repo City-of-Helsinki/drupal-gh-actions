@@ -113,18 +113,16 @@ jobs:
           PHPUNIT_EXTRA_ARGS=
           # PHPUnit 10.5+ fails to "Incorrect filter configuration" error if we
           # attempt to generate coverage without tests that generate coverage.
-          HAS_UNIT_TESTS=$(vendor/bin/phpunit -c /app/phpunit.xml.dist --list-tests --testsuite unit,kernel | tail -n +4)
+          HAS_UNIT_TESTS=$(docker compose exec app vendor/bin/phpunit -c /app/phpunit.xml.dist --list-tests --testsuite unit,kernel | tail -n +4)
 
           if [ -n "$HAS_UNIT_TESTS" ]; then
             PHPUNIT_EXTRA_ARGS=--coverage-clover=/app/coverage-base.xml
           fi
-          echo $PHPUNIT_EXTRA_ARGS
           docker compose exec app bash -c "vendor/bin/phpunit -c /app/phpunit.xml.dist $PHPUNIT_EXTRA_ARGS"
 
       - name: Export coverage.xml
         run: |
           docker compose exec app bash -c "cat /app/coverage-base.xml" > coverage.xml
-          cat coverage.xml
 
       - name: SonarQube Scan
         if: ${{ env.SONARCLOUD_TOKEN }}
