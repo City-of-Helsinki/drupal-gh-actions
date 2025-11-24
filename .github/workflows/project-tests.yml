@@ -108,6 +108,7 @@ jobs:
         run: |
           docker compose exec app bash -c "mkdir -p /app/results"
           docker compose exec app bash -c "touch /app/coverage-base.xml"
+          docker compose exec app bash -c "mkdir -p tests/dtt/src/ExistingSite tests/dtt/src/ExistingSiteJavascript"
 
           # PHPUnit 10.5+ fails to "Incorrect filter configuration" error if we
           # attempt to run empty test suite.
