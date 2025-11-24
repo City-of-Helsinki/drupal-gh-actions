@@ -107,19 +107,18 @@ jobs:
       - name: Run PHPUnit tests
         run: |
           docker compose exec app bash -c "mkdir -p /app/results"
-          docker compose exec app bash -c "touch /app/coverage-base.xml"
           docker compose exec app bash -c "mkdir -p tests/dtt/src/ExistingSite tests/dtt/src/ExistingSiteJavascript"
 
+          PHPUNIT_EXTRA_ARGS=
           # PHPUnit 10.5+ fails to "Incorrect filter configuration" error if we
-          # attempt to run empty test suite.
-          # Make sure we actually have at least one test.
-          HAS_TESTS=$(vendor/bin/phpunit -c /app/phpunit.xml.dist --coverage-clover=/app/coverage-base.xml --list-tests | tail -n +4)
+          # attempt to generate coverage without tests that generate coverage.
+          HAS_UNIT_TESTS=$(vendor/bin/phpunit -c /app/phpunit.xml.dist --list-tests --testsuite unit,kernel | tail -n +4)
 
-          if [ -z "$HAS_TESTS" ]; then
-            docker compose exec app bash -c "vendor/bin/phpunit -c /app/phpunit.xml.dist --coverage-clover=/app/coverage-base.xml"
-          else
-            echo "No PHPUnit tests found. Skipping."
+          if [ ! -z "$HAS_UNIT_TESTS" ]; then
+            docker compose exec app bash -c "touch /app/coverage-base.xml"
+            PHPUNIT_EXTRA_ARGS=--coverage-clover=/app/coverage-base.xml
           fi
+          docker compose exec app bash -c "vendor/bin/phpunit -c /app/phpunit.xml.dist $PHPUNIT_EXTRA_ARGS"
 
       - name: Export coverage.xml
         run: |
