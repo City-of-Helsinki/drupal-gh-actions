@@ -111,7 +111,17 @@ jobs:
             docker compose exec app bash -c "composer test-php tests/"
           fi
           docker compose exec app bash -c "touch /app/coverage-base.xml"
-          docker compose exec app bash -c "vendor/bin/phpunit -c /app/phpunit.xml.dist --coverage-clover=/app/coverage-base.xml public/modules/custom"
+
+          # PHPUnit 10.5+ fails to "Incorrect filter configuration" error if we
+          # attempt to run empty test suite.
+          # Make sure we actually have at least one test.
+          HAS_TESTS=$(vendor/bin/phpunit -c /app/phpunit.xml.dist --coverage-clover=/app/coverage-base.xml public/modules/custom --list-tests | tail -n +4)
+
+          if [ -z "$HAS_TESTS" ]; then
+            docker compose exec app bash -c "vendor/bin/phpunit -c /app/phpunit.xml.dist --coverage-clover=/app/coverage-base.xml public/modules/custom"
+          else
+            echo "No PHPUnit tests found. Skipping.
+          fi
 
       - name: Export coverage.xml
         run: |
