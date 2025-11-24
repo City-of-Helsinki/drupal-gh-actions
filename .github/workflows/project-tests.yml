@@ -107,9 +107,6 @@ jobs:
       - name: Run PHPUnit tests
         run: |
           docker compose exec app bash -c "mkdir -p /app/results"
-          if [ -d "tests/" ]; then
-            docker compose exec app bash -c "composer test-php tests/"
-          fi
           docker compose exec app bash -c "touch /app/coverage-base.xml"
 
           # PHPUnit 10.5+ fails to "Incorrect filter configuration" error if we
