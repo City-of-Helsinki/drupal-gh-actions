@@ -114,7 +114,7 @@ jobs:
           # attempt to generate coverage without tests that generate coverage.
           HAS_UNIT_TESTS=$(vendor/bin/phpunit -c /app/phpunit.xml.dist --list-tests --testsuite unit,kernel | tail -n +4)
 
-          if [ ! -z "$HAS_UNIT_TESTS" ]; then
+          if [ -n "$HAS_UNIT_TESTS" ]; then
             docker compose exec app bash -c "touch /app/coverage-base.xml"
             PHPUNIT_EXTRA_ARGS=--coverage-clover=/app/coverage-base.xml
           fi
