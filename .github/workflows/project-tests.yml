@@ -118,6 +118,7 @@ jobs:
           if [ -n "$HAS_UNIT_TESTS" ]; then
             PHPUNIT_EXTRA_ARGS=--coverage-clover=/app/coverage-base.xml
           fi
+          echo $PHPUNIT_EXTRA_ARGS
           docker compose exec app bash -c "vendor/bin/phpunit -c /app/phpunit.xml.dist $PHPUNIT_EXTRA_ARGS"
 
       - name: Export coverage.xml
