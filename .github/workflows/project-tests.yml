@@ -120,7 +120,7 @@ jobs:
           if [ -z "$HAS_TESTS" ]; then
             docker compose exec app bash -c "vendor/bin/phpunit -c /app/phpunit.xml.dist --coverage-clover=/app/coverage-base.xml"
           else
-            echo "No PHPUnit tests found. Skipping.
+            echo "No PHPUnit tests found. Skipping."
           fi
 
       - name: Export coverage.xml
