@@ -108,7 +108,7 @@ jobs:
         run: |
           docker compose exec app bash -c "mkdir -p /app/results"
           docker compose exec app bash -c "mkdir -p tests/dtt/src/ExistingSite tests/dtt/src/ExistingSiteJavascript"
-          docker compose exec app bash -c "touch /app/coverage-base.xml"
+          docker compose exec app bash -c "touch /app/coverage-base.xml /app/.deprecation-ignore.txt"
 
           PHPUNIT_EXTRA_ARGS=
           # PHPUnit 10.5+ fails to "Incorrect filter configuration" error if we
@@ -117,6 +117,8 @@ jobs:
 
           if [ -n "$HAS_UNIT_TESTS" ]; then
             PHPUNIT_EXTRA_ARGS=--coverage-clover=/app/coverage-base.xml
+          else
+            echo "No unit tests found. No coverage will be generated." >> $GITHUB_STEP_SUMMARY
           fi
           docker compose exec app bash -c "vendor/bin/phpunit -c /app/phpunit.xml.dist $PHPUNIT_EXTRA_ARGS"
 
