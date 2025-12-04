@@ -1,0 +1,38 @@
+name: Delete old BackstopJS preview pages
+on:
+  workflow_call:
+    inputs:
+      repository:
+        description: 'Github repository'
+        required: true
+        type: string
+
+jobs:
+  visual-regression-cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Git user
+        run: |
+          git config --global user.name github-actions
+          git config --global user.email github-actions@github.com
+
+      - name: Remove the folder
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for d in pull/*; do
+            id=$(echo $d | cut -d / -f2)
+            state=$(gh pr view $id --repo ${{ inputs.repository }} --json state --jq .state)
+
+            if [ "$state" != "OPEN" ]; then
+              rm -r pull/$id
+            fi
+          done
+
+          if [[ $(git status --porcelain) ]]; then
+            git add .
+            git commit -m 'Automated commit'
+            git push
+          fi
