@@ -105,3 +105,31 @@ jobs:
 ## NPM Audit
 
 Updates HDBT Subtheme Node.js dependencies using `npm audit`.
+
+## Visual regression cleanup
+
+Removes old BackstopJS preview pages.
+
+Available configuration:
+
+- `repository`: Required. The parent repository from which preview pages are deployed.
+
+Example:
+
+```yaml
+name: Delete old BackstopJS preview pages
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '5 4 * * *'
+
+concurrency:
+  group: visual-regression
+
+jobs:
+  tests:
+    uses: city-of-helsinki/drupal-gh-actions/.github/workflows/visual-regression-cleanup.yml
+    with:
+      repository: city-of-helsinki/your-repository
+```
+
