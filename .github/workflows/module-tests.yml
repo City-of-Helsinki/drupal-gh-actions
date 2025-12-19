@@ -22,6 +22,11 @@ on:
         required: false
         type: string
         default: '--standard=Drupal --extensions=php,module,install,theme,inc'
+      platform_branch:
+        description: 'The Platform base branch'
+        required: false
+        type: string
+        default: 'main'
     secrets:
       sonarcloud_token:
         required: false
@@ -44,7 +49,7 @@ jobs:
     steps:
       - name: Clone platform
         run: |
-          git clone --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
+          git clone --branch=${{ inputs.platform_branch }} --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
           rm -rf ./drupal/.git
 
       - uses: actions/checkout@v5
