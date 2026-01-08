@@ -44,7 +44,7 @@ jobs:
           docker compose exec app bash -c "drush si -y && drush cr"
           docker compose exec app bash -c "drush si --existing-config -y"
           docker compose exec app bash -c "drush cr"
-          docker compose exec app bash -c "drush cim -y"
+          # docker compose exec app bash -c "drush cim -y"
           docker compose exec app bash -c "drush sql-dump --result-file=/app/latest.sql --extra-dump=--skip-ssl"
 
       - name: Upload latest database dump
