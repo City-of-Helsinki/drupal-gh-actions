@@ -281,5 +281,7 @@ jobs:
         if: always()
         with:
           name: Functional test results ${{ inputs.php_version }}
-          path: drupal/results
+          path: |
+            drupal/results
+            drupal/public/sites/simpletest/browser_output
           retention-days: 1
