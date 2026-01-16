@@ -156,15 +156,6 @@ jobs:
         # Execute flag is lost due to actions/download-artifact.
         run: docker compose exec app bash -c "chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php"
 
-      - name: List PHPUnit tests
-        working-directory: drupal
-        run: |
-          docker compose exec app php vendor/bin/phpunit \
-            --bootstrap /app/public/core/tests/bootstrap.php \
-            -c /app/public/modules/contrib/$MODULE_NAME/phpunit.xml \
-            --testsuite unit,kernel \
-            --list-tests >> $GITHUB_STEP_SUMMARY
-
       - name: Run PHPUnit tests
         working-directory: drupal
         run: |
@@ -252,15 +243,6 @@ jobs:
         run: |
           docker compose exec app bash -c "vendor/bin/drush --yes -v site-install minimal"
           docker compose exec app bash -c "vendor/bin/drush en $MODULE_NAME -y"
-
-      - name: List PHPUnit tests
-        working-directory: drupal
-        run: |
-          docker compose exec app php vendor/bin/phpunit \
-            --bootstrap /app/public/core/tests/bootstrap.php \
-            -c /app/public/modules/contrib/$MODULE_NAME/phpunit.xml \
-            --testsuite functional,functional-javascript,existing-site,existing-site-javascript \
-            --list-tests >> $GITHUB_STEP_SUMMARY
 
       - name: Run PHPUnit tests
         working-directory: drupal
