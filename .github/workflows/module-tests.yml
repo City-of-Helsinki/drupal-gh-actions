@@ -151,12 +151,14 @@ jobs:
         working-directory: drupal
         run: COMPOSE_FILE=${{ inputs.compose_files }} docker compose up -d --wait
 
+      - name: Fix execute flag
+        working-directory: drupal
+        # Execute flag is lost due to actions/download-artifact.
+        run: docker compose exec app bash -c "chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php"
+
       - name: Run PHPUnit tests
         working-directory: drupal
         run: |
-          # Execute flag is lost due to actions/download-artifact.
-          docker compose exec app bash -c "chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php"
-
           docker compose exec app bash -c "mkdir -p /app/results"
           docker compose exec app php vendor/bin/phpunit \
             --bootstrap /app/public/core/tests/bootstrap.php \
@@ -231,11 +233,14 @@ jobs:
         working-directory: drupal
         run: docker compose up -d --wait
 
+      - name: Fix execute flag
+        working-directory: drupal
+        # Execute flag is lost due to actions/download-artifact.
+        run: docker compose exec app bash -c "chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php"
+
       - name: Install Drupal
         working-directory: drupal
         run: |
-          # Execute flag is lost due to actions/download-artifact.
-          docker compose exec app bash -c "chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php"
           docker compose exec app bash -c "vendor/bin/drush --yes -v site-install minimal"
           docker compose exec app bash -c "vendor/bin/drush en $MODULE_NAME -y"
 
@@ -258,5 +263,7 @@ jobs:
         if: always()
         with:
           name: Functional test results ${{ inputs.php_version }}
-          path: drupal/results
+          path: |
+            drupal/results
+            drupal/public/sites/simpletest/browser_output
           retention-days: 1
