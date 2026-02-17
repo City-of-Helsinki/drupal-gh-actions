@@ -36,22 +36,16 @@ jobs:
       - name: Start project
         run: make up
 
-      - name: Build project
-        run: docker compose exec app bash -c "composer install --no-interaction"
-
       - name: Setup drupal and save database dump
         run: |
-          docker compose exec app bash -c "drush si -y && drush cr"
-          docker compose exec app bash -c "drush si --existing-config -y"
-          docker compose exec app bash -c "drush cr"
-          docker compose exec app bash -c "drush cim -y"
-          docker compose exec app bash -c "drush sql-dump --result-file=/app/latest.sql --extra-dump=--skip-ssl"
+          make new
+          make drush-create-dump
 
       - name: Upload latest database dump
         uses: actions/upload-artifact@v4
         with:
-          name: latest.sql
-          path: latest.sql
+          name: dump.sql
+          path: dump.sql
           retention-days: 10
 
       - name: Report OK status to Sentry
