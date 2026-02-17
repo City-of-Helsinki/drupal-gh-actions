@@ -97,11 +97,11 @@ jobs:
       - name: Download latest dump
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh run download -n latest.sql
+        run: gh run download -n dump.sql
 
       - name: Install Drupal
         run: |
-          docker compose exec app bash -c "mysql --skip-ssl --user=drupal --password=drupal --database=drupal --host=db --port=3306 -A < latest.sql"
+          docker compose exec app bash -c "mysql --skip-ssl --user=drupal --password=drupal --database=drupal --host=db --port=3306 -A < dump.sql"
           docker compose exec app bash -c "drush deploy"
 
       - name: Run PHPUnit tests

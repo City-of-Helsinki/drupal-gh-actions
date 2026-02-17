@@ -29,7 +29,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh run download -n latest.sql
+          gh run download -n dump.sql
 
       - name: Prepare setup
         run: |
@@ -40,7 +40,7 @@ jobs:
       - name: Build project
         run: |
           composer install --no-interaction --no-dev
-          $(drush sql:connect --extra=--skip-ssl) < latest.sql
+          $(drush sql:connect --extra=--skip-ssl) < dump.sql
           drush cim -y && drush updb -y && drush cr
           composer update drupal/helfi_* drupal/hdbt* -W --no-interaction
 

@@ -44,7 +44,7 @@ jobs:
       - name: Upload latest database dump
         uses: actions/upload-artifact@v4
         with:
-          name: latest.sql
+          name: dump.sql
           path: dump.sql
           retention-days: 10
 
