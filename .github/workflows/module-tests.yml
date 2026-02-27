@@ -52,12 +52,12 @@ jobs:
           git clone --branch=${{ inputs.platform_branch }} --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
           rm -rf ./drupal/.git
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: druidfi/stonehenge
           path: drupal/stonehenge
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           path: 'drupal/module'
 
@@ -126,6 +126,10 @@ jobs:
       - name: Run phpstan
         working-directory: drupal
         run: php vendor/bin/phpstan analyze -c public/modules/contrib/$MODULE_NAME/phpstan.neon public/modules/contrib/$MODULE_NAME
+
+      - name: Scan Composer patches
+        working-directory: drupal
+        run: drush helfi:tools:check-composer-patches /app/composer.lock"  >> $GITHUB_STEP_SUMMARY
 
   unit-tests:
     runs-on: ubuntu-latest

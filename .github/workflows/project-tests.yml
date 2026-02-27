@@ -29,14 +29,14 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: druidfi/stonehenge
 
       - name: Install and start Stonehenge
         run: make up
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -85,6 +85,9 @@ jobs:
       - name: Scan security updates
         if: ${{ inputs.check_security_updates }}
         run: docker compose exec app bash -c "composer audit"
+
+      - name: Scan Composer patches
+        run: docker compose exec app bash -c "drush helfi:tools:check-composer-patches /app/composer.lock" >> $GITHUB_STEP_SUMMARY
 
       - name: Run PHPCS
         run: |
