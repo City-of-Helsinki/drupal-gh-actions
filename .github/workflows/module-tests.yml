@@ -110,6 +110,11 @@ jobs:
           name: build
           path: drupal
 
+      - name: Fix execute flag
+        working-directory: drupal
+        # Execute flag is lost due to actions/download-artifact.
+        run: docker compose exec app bash -c "chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php"
+
       - name: Run PHPCS
         working-directory: drupal
         run: |
