@@ -52,12 +52,12 @@ jobs:
           git clone --branch=${{ inputs.platform_branch }} --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
           rm -rf ./drupal/.git
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: druidfi/stonehenge
           path: drupal/stonehenge
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           path: 'drupal/module'
 
@@ -110,6 +110,11 @@ jobs:
           name: build
           path: drupal
 
+      - name: Fix execute flag
+        working-directory: drupal
+        # Execute flag is lost due to actions/download-artifact.
+        run: chmod +x vendor/bin/* vendor/drush/drush/drush vendor/drush/drush/drush.php
+
       - name: Run PHPCS
         working-directory: drupal
         run: |
@@ -126,6 +131,10 @@ jobs:
       - name: Run phpstan
         working-directory: drupal
         run: php vendor/bin/phpstan analyze -c public/modules/contrib/$MODULE_NAME/phpstan.neon public/modules/contrib/$MODULE_NAME
+
+      - name: Scan Composer patches
+        working-directory: drupal
+        run: vendor/bin/drush helfi:tools:check-composer-patches $PWD/composer.lock --format=markdown_table >> $GITHUB_STEP_SUMMARY
 
   unit-tests:
     runs-on: ubuntu-latest
