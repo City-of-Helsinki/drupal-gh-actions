@@ -129,7 +129,7 @@ jobs:
 
       - name: Scan Composer patches
         working-directory: drupal
-        run: vendir/bin/drush helfi:tools:check-composer-patches /app/composer.lock --format=markdown_table >> $GITHUB_STEP_SUMMARY
+        run: vendor/bin/drush helfi:tools:check-composer-patches /app/composer.lock --format=markdown_table >> $GITHUB_STEP_SUMMARY
 
   unit-tests:
     runs-on: ubuntu-latest
