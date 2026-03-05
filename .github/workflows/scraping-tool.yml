@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install wget2
-        run: apt-get update && apt-get install wget2
+        run: sudo apt-get update && sudo apt-get install wget2
 
       - name: Mirror the website content
         run: |
