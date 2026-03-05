@@ -23,7 +23,7 @@ jobs:
             -e robots=off \
             --ignore-tags=img,link,script,picture,source,meta \
             --follow-tags=a \
-            {{ inputs.domain }}
+            ${{ inputs.domain }}
 
       - name: Upload the mirrored website content
         uses: actions/upload-artifact@v6
