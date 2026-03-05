@@ -42,7 +42,7 @@ jobs:
           make drush-create-dump
 
       - name: Upload latest database dump
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: dump.sql
           path: dump.sql
