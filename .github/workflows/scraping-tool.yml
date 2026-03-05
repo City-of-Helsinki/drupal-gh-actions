@@ -15,13 +15,19 @@ jobs:
       - name: Mirror the website content
         run: |
           set +e
-          # --ignore-tags: Ignore all assets like images, CSS and JS.
-          # --follow-tags: Only follow <a> links.
+          # --ignore-tags:
+          #     Ignore all assets like images, CSS and JS.
+          # --follow-tags:
+          #     Only follow <a> links.
+          # --restrict-file-names=windows:
+          #     actions/upload-artifact is filesystem agnostic, meaning
+          #     special characters such as ? and <> must be escaped.
           wget2 --mirror \
             --convert-links \
             --adjust-extension \
             -P contents \
             -e robots=off \
+            --restrict-file-names=windows \
             --ignore-tags=img,link,script,picture,source,meta \
             --follow-tags=a \
             ${{ inputs.domain }}
