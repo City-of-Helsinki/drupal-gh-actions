@@ -21,7 +21,7 @@ jobs:
             --adjust-extension \
             -P contents \
             -e robots=off \
-            --ignore-tags=img,link,script,picture,source,meta
+            --ignore-tags=img,link,script,picture,source,meta \
             --follow-tags=a \
             {{ inputs.domain }}
 
