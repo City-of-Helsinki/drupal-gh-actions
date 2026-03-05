@@ -9,6 +9,9 @@ jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
+      - name: Install wget2
+        run: apt-get update && apt-get install wget2
+
       - name: Mirror the website content
         run: |
           wget2 --mirror \
@@ -19,11 +22,12 @@ jobs:
             # Ignore all assets like images, CSS and JS.
             --ignore-tags=img,link,script,picture,source,meta
             # Only follow <a> links.
-            --follow-tags=a
+            --follow-tags=a \
+            {{ inputs.domain }}
 
-      - name: Upload results
+      - name: Upload the mirrored website content
         uses: actions/upload-artifact@v6
         with:
-          name: results
+          name: scraping-tool-results
           path: contents
           retention-days: 10
