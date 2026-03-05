@@ -14,6 +14,7 @@ jobs:
 
       - name: Mirror the website content
         run: |
+          set +e
           # --ignore-tags: Ignore all assets like images, CSS and JS.
           # --follow-tags: Only follow <a> links.
           wget2 --mirror \
@@ -27,6 +28,7 @@ jobs:
 
       - name: Upload the mirrored website content
         uses: actions/upload-artifact@v6
+        if: always()
         with:
           name: scraping-tool-results
           path: contents
