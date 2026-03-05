@@ -14,14 +14,14 @@ jobs:
 
       - name: Mirror the website content
         run: |
+          # --ignore-tags: Ignore all assets like images, CSS and JS.
+          # --follow-tags: Only follow <a> links.
           wget2 --mirror \
             --convert-links \
             --adjust-extension \
             -P contents \
             -e robots=off \
-            # Ignore all assets like images, CSS and JS.
             --ignore-tags=img,link,script,picture,source,meta
-            # Only follow <a> links.
             --follow-tags=a \
             {{ inputs.domain }}
 
