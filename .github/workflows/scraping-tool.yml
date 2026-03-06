@@ -22,6 +22,7 @@ jobs:
           # --restrict-file-names=windows:
           #     actions/upload-artifact is filesystem agnostic, meaning
           #     special characters such as ? and <> must be escaped.
+          EXIT_CODE=0
           wget2 --mirror \
             --convert-links \
             --adjust-extension \
@@ -30,7 +31,14 @@ jobs:
             --restrict-file-names=windows \
             --ignore-tags=img,link,script,picture,source,meta \
             --follow-tags=a \
-            ${{ inputs.domain }}
+            ${{ inputs.domain }} || EXIT_CODE=$?
+
+          # Allow wget to succeed for exit code 8, because it just means
+          # one or more URLs failed to load.
+          if [ "$EXIT_CODE" == 8 ]; then
+            exit 0
+          fi
+          exit $EXIT_CODE
 
       - name: Upload the mirrored website content
         uses: actions/upload-artifact@v6
