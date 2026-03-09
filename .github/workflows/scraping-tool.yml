@@ -46,4 +46,4 @@ jobs:
         with:
           name: scraping-tool-results
           path: contents
-          retention-days: 10
+          retention-days: 40

@@ -133,3 +133,33 @@ jobs:
       repository: city-of-helsinki/your-repository
 ```
 
+## Scraping tool mirror
+
+Creates a static HTML copy of a given website. The dump is saved as a project "artifact" and can be downloaded using the [GitHub CLI](https://cli.github.com/) tool.
+
+This is meant to be used with [City-of-Helsinki/drupal-helfi-scraping-tool](https://github.com/City-of-Helsinki/drupal-helfi-scraping-tool) to perform DOM search operations against the entire site.
+
+Available configuration:
+
+- `domain`: Required. The production domain of your site.
+
+### Usage
+
+1. Clone the project repository
+2. Add `.github/workflows/scraping-tool.yml`:
+```yaml
+on:
+  workflow_dispatch:
+  schedule:
+    # Run once a month
+    - cron:  '0 0 * * 0'
+name: Build scraping tool artifact
+jobs:
+  mirror:
+    uses: city-of-helsinki/drupal-gh-actions/.github/workflows/scraping-tool.yml@main
+    with:
+      # Change the domain to whatever site you want to mirror.
+      domain: 'historia.hel.fi'
+```
+3. Run the action by going to **Actions → Build scraping tool artifact → Run workflow**.
+4. Run `gh run download -n scraping-tool-results` inside the project's Git directory to download the results.
