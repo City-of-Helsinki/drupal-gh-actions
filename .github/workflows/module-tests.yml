@@ -88,7 +88,7 @@ jobs:
           cp -r module/.git public/modules/contrib/$MODULE_NAME/
 
       - name: Store build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build
           path: drupal
@@ -196,7 +196,7 @@ jobs:
         run: docker compose logs app > results/service.log
 
       - name: Create an artifact from test report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: Unit test results ${{ inputs.php_version }}
@@ -268,7 +268,7 @@ jobs:
         run: docker compose logs app > results/service.log
 
       - name: Create an artifact from test report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: Functional test results ${{ inputs.php_version }}

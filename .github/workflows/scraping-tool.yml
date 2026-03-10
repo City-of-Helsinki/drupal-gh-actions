@@ -1,0 +1,49 @@
+on:
+  workflow_call:
+    inputs:
+      domain:
+        description: 'The domain'
+        required: true
+        type: string
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install wget2
+        run: sudo apt-get update && sudo apt-get install wget2
+
+      - name: Mirror the website content
+        run: |
+          set +e
+          # --ignore-tags:
+          #     Ignore all assets like images, CSS and JS.
+          # --follow-tags:
+          #     Only follow <a> links.
+          # --restrict-file-names=windows:
+          #     actions/upload-artifact is filesystem agnostic, meaning
+          #     special characters such as ? and <> must be escaped.
+          EXIT_CODE=0
+          wget2 --mirror \
+            --convert-links \
+            --adjust-extension \
+            -P contents \
+            -e robots=off \
+            --restrict-file-names=windows \
+            --ignore-tags=img,link,script,picture,source,meta \
+            --follow-tags=a \
+            ${{ inputs.domain }} || EXIT_CODE=$?
+
+          # Allow wget to succeed for exit code 8, because it just means
+          # one or more URLs failed to load.
+          if [ "$EXIT_CODE" == 8 ]; then
+            exit 0
+          fi
+          exit $EXIT_CODE
+
+      - name: Upload the mirrored website content
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: scraping-tool-results
+          path: contents
+          retention-days: 40
