@@ -102,6 +102,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh run download -n dump.sql
 
+      - name: Prepare setup
+        run: |
+          # We install Drupal from existing dump, so locale_install() hook
+          # is never fired. Make sure the translations folder exists.
+          docker compose exec app bash -c "mkdir -p public/sites/default/files/translations"
+
       - name: Install Drupal
         run: |
           docker compose exec app bash -c "mysql --skip-ssl --user=drupal --password=drupal --database=drupal --host=db --port=3306 -A < dump.sql"
