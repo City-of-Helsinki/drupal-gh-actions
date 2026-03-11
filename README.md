@@ -2,6 +2,20 @@
 
 Provides re-usable workflow files for Drupal projects.
 
+## How to develop
+
+1. Create a new branch for your workflow changes.
+2. Create a new branch in your project / module repo and change the relevant workflow yml to use the above branch. For example in `test.yml`:
+  ```diff
+    jobs:
+    tests:
+  -   uses: city-of-helsinki/drupal-gh-actions/.github/workflows/project-tests.yml@main
+  +   uses: city-of-helsinki/drupal-gh-actions/.github/workflows/project-tests.yml@your_test_branch
+      secrets:
+        sonarcloud_token: ${{ secrets.SONAR_TOKEN }}
+  ```
+3. Create a draft PR to launch the workflow
+
 ## Artifact build
 
 See [documentation](https://github.com/City-of-Helsinki/drupal-helfi-platform/blob/main/documentation/automatic-updates.md#2-enable-artifact-action) on enabling the artifact action
