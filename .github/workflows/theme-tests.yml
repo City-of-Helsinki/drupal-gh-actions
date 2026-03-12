@@ -1,0 +1,117 @@
+on:
+  workflow_call:
+    inputs:
+      compose_files:
+        description: 'Compose files'
+        default: 'compose.yaml:compose.ci.yaml'
+        required: false
+        type: string
+      php_version:
+        description: 'Used PHP version'
+        required: false
+        type: string
+        default: '8.4'
+      # Composer dev dependencies are never parsed. Make sure to include
+      # all necessary dev dependencies here.
+      composer_dev_dependencies:
+        description: 'Extra composer dev dependencies'
+        required: false
+        default: ''
+        type: string
+      phpcs_args:
+        description: 'Used phpcs arguments. These are emitted if phpcs.xml file exists.'
+        required: false
+        type: string
+        default: '--standard=Drupal --extensions=php,module,install,theme,inc'
+      platform_branch:
+        description: 'The Platform base branch'
+        required: false
+        type: string
+        default: 'main'
+    secrets:
+      sonarcloud_token:
+        required: false
+env:
+  COMPOSER_DISCARD_CHANGES: true
+  COMPOSER_MIRROR_PATH_REPOS: 1
+  SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/city-of-helsinki/drupal-web:${{ inputs.php_version }}
+      options: --hostname app --user 1001
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Parse $MODULE_NAME from composer.json
+        run: echo "MODULE_NAME=$(cat composer.json | jq -r .name | awk -F/ '{print $NF}')" >> $GITHUB_ENV
+
+      - name: Store module name
+        id: module_name
+        run: echo "module_name=$MODULE_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Clone platform
+        run: |
+          git clone --branch=${{ inputs.platform_branch }} --depth=1 https://github.com/City-of-Helsinki/drupal-helfi-platform.git ./drupal
+
+      - name: Install required composer dependencies
+        working-directory: drupal
+        run: |
+          # We use mglaman/composer-drupal-lenient to patch modules that are not
+          # compatible with the latest core version.
+          # The package must be installed globally because city-of-helsinki/drupal-helfi-platform
+          # has no composer.lock committed the repository.
+          # @see https://github.com/mglaman/composer-drupal-lenient?tab=readme-ov-file#support-when-composerlock-removed
+          composer global config --no-plugins allow-plugins.mglaman/composer-drupal-lenient true
+          composer global require mglaman/composer-drupal-lenient
+          composer config repositories.5 path $GITHUB_WORKSPACE
+          composer require drupal/$MODULE_NAME ${{ inputs.composer_dev_dependencies }} -W
+          # We use COMPOSER_MIRROR_PATH_REPOS=1 to mirror local repository
+          # instead of symlinking it to prevent code coverage issues with
+          # phpunit. Copy .git folder manually so codecov can generate line by
+          # line coverage.
+          cp -r $GITHUB_WORKSPACE/.git public/themes/contrib/$MODULE_NAME/
+
+      - name: Run PHPCS
+        working-directory: drupal
+        run: |
+          if [ ! -f "public/themes/contrib/$MODULE_NAME/phpcs.xml" ]; then
+            ARGS='${{ inputs.phpcs_args }}'
+          else
+            # Remove any existing phpcs files and copy module's
+            # phpcs file to Drupal root.
+            rm -f phpcs.xml.dist
+            cp public/themes/contrib/$MODULE_NAME/phpcs.xml .
+          fi
+          vendor/bin/phpcs public/themes/contrib/$MODULE_NAME $ARGS
+
+      - name: Check that theme is not built with dev mode
+        run: if grep -q 'sourceMappingURL=' -R public/themes/contrib/$MODULE_NAME/dist/css; then exit 1; fi
+
+      - name: Run phpstan
+        working-directory: drupal
+        run: vendor/bin/phpstan analyze -c public/themes/contrib/$MODULE_NAME/phpstan.neon public/themes/contrib/$MODULE_NAME
+
+      - name: Scan Composer patches
+        working-directory: drupal
+        run: vendor/bin/drush helfi:tools:check-composer-patches $PWD/composer.lock --format=markdown_table >> $GITHUB_STEP_SUMMARY
+
+  test-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Run tests
+        run: |
+          npm ci
+          npm run lint
+
+      - name: NPM Audit
+        run: npm audit --audit-level high
