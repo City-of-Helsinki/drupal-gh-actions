@@ -33,6 +33,7 @@ on:
         required: false
 env:
   COMPOSER_DISCARD_CHANGES: true
+  COMPOSER_MIRROR_PATH_REPOS: 1
   SONARCLOUD_TOKEN: ${{ secrets.sonarcloud_token }}
 jobs:
   tests:
@@ -67,7 +68,11 @@ jobs:
           composer global config --no-plugins allow-plugins.mglaman/composer-drupal-lenient true
           composer global require mglaman/composer-drupal-lenient
           composer config repositories.5 path $GITHUB_WORKSPACE
-          composer require drupal/$MODULE_NAME ${{ inputs.composer_dev_dependencies }} -W
+          # We use COMPOSER_MIRROR_PATH_REPOS=1 to mirror local repository
+          # instead of symlinking it to prevent code coverage issues with
+          # phpunit. Copy .git folder manually so codecov can generate line by
+          # line coverage.
+          cp -r $GITHUB_WORKSPACE/.git public/themes/contrib/$MODULE_NAME/
 
       - name: Run PHPCS
         working-directory: drupal
