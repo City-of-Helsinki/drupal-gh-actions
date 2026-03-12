@@ -80,11 +80,14 @@ jobs:
             rm -f phpcs.xml.dist
             cp public/themes/contrib/$MODULE_NAME/phpcs.xml .
           fi
-          php vendor/bin/phpcs public/themes/contrib/$MODULE_NAME $ARGS
+          vendor/bin/phpcs public/themes/contrib/$MODULE_NAME $ARGS
+
+      - name: Check that theme is not built with dev mode
+        run: if grep -q 'sourceMappingURL=' -R public/themes/contrib/$MODULE_NAME/dist/css; then exit 1; fi
 
       - name: Run phpstan
         working-directory: drupal
-        run: php vendor/bin/phpstan analyze -c public/themes/contrib/$MODULE_NAME/phpstan.neon public/themes/contrib/$MODULE_NAME
+        run: vendor/bin/phpstan analyze -c public/themes/contrib/$MODULE_NAME/phpstan.neon public/themes/contrib/$MODULE_NAME
 
       - name: Scan Composer patches
         working-directory: drupal
