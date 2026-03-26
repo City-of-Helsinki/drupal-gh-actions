@@ -143,7 +143,9 @@ jobs:
 
       - name: Export logs
         if: always()
-        run: docker compose logs app > results/service.log
+        run: |
+          docker compose logs app > results/service.log
+          docker compose logs elastic > results/elastic.log
 
       - name: Create an artifact from test report
         uses: actions/upload-artifact@v6
