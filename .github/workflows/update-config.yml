@@ -42,7 +42,7 @@ jobs:
           composer install --no-interaction --no-dev
           $(drush sql:connect --extra=--skip-ssl) < dump.sql
           drush cim -y && drush updb -y && drush cr
-          composer update drupal/helfi_* drupal/hdbt* -W --no-interaction
+          composer update -W --no-interaction
 
           # Make sure new patches are installed.
           composer install --no-interaction --no-dev
