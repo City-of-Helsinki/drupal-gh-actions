@@ -23,7 +23,7 @@ jobs:
           - 3306:3306
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Download latest dump
         env:
@@ -89,7 +89,7 @@ jobs:
           cat $GITHUB_STEP_SUMMARY > /tmp/pr-message.txt
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           commit-message: Update configuration
           token: ${{ secrets.automatic_update_token }}
@@ -107,7 +107,7 @@ jobs:
         run: echo "number=$(gh pr list --base ${BRANCH_NAME} --head update-configuration --json number --jq '.[].number')" >> $GITHUB_OUTPUT
 
       - name: Comment PR
-        uses: thollander/actions-comment-pull-request@v2
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
         if: ${{ steps.find-pr.outputs.number != '' }}
         with:
           comment_tag: status
