@@ -110,7 +110,7 @@ jobs:
         uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
         if: ${{ steps.find-pr.outputs.number != '' }}
         with:
-          comment_tag: status
+          comment-tag: status
           mode: ${{ steps.module-status.outputs.MODE }}
-          filePath: /tmp/pr-message.txt
-          pr_number: ${{ steps.find-pr.outputs.number }}
+          file-path: /tmp/pr-message.txt
+          pr-number: ${{ steps.find-pr.outputs.number }}
