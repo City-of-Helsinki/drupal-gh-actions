@@ -1,0 +1,20 @@
+on:
+  workflow_call:
+    secrets:
+      gh_token:
+        required: true
+name: Automatic release PR
+jobs:
+  release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create pull request
+        run: |
+          gh pr create \
+            --base main \
+            --head dev \
+            --title "Dev to main" \
+            --body "Dev to main" || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
