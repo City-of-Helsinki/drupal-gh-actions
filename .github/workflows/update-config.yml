@@ -5,9 +5,13 @@ on:
         required: true
 env:
   GH_TOKEN: ${{ github.token }}
+  SUBTHEME_DIR: public/themes/custom/hdbt_subtheme
+  HDBT_DIR: public/themes/contrib/hdbt
 jobs:
   update-config:
     runs-on: ubuntu-latest
+    outputs:
+      pr-operation: ${{ steps.create-pr.outputs.pull-request-operation }}
     container:
       image: ghcr.io/city-of-helsinki/drupal-web:8.5
       options: --hostname app --user 1001
@@ -23,7 +27,7 @@ jobs:
           - 3306:3306
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Download latest dump
         env:
@@ -89,6 +93,7 @@ jobs:
           cat $GITHUB_STEP_SUMMARY > /tmp/pr-message.txt
 
       - name: Create Pull Request
+        id: create-pr
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           commit-message: Update configuration
@@ -114,3 +119,96 @@ jobs:
           mode: ${{ steps.module-status.outputs.MODE }}
           file-path: /tmp/pr-message.txt
           pr-number: ${{ steps.find-pr.outputs.number }}
+
+  update-theme-build:
+    needs: update-config
+    if: needs.update-config.outputs.pr-operation == 'created' || needs.update-config.outputs.pr-operation == 'updated'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: update-configuration
+          persist-credentials: false
+
+      # Check out hdbt at the locked commit from composer.lock.
+      - name: Fetch hdbt
+        run: |
+          REF=$(jq -r '.packages[] | select(.name == "drupal/hdbt") | .source.reference' composer.lock)
+          git init -q "$HDBT_DIR"
+          git -C "$HDBT_DIR" fetch -q --depth 1 https://github.com/City-of-Helsinki/drupal-hdbt.git "$REF"
+          git -C "$HDBT_DIR" checkout -q FETCH_HEAD
+
+      # Install the subtheme npm packages without running package scripts.
+      - name: Install dependencies
+        run: |
+          install() {
+            docker run --rm \
+              --user "$(id -u):$(id -g)" \
+              --env HOME=/tmp \
+              --env PATH=/tmp/npm/bin:/usr/local/bin:/usr/bin:/bin \
+              --volume "$PWD/public:/app/public" \
+              --workdir "/app/$1" \
+              node:24-alpine \
+              sh -c "npm install --global --prefix /tmp/npm npm@12 --no-audit --no-fund && $2 && npm audit signatures"
+          }
+
+          if jq -e '.scripts.postinstall' "$SUBTHEME_DIR/package.json" > /dev/null; then
+            install "$HDBT_DIR" 'npm ci --ignore-scripts --no-audit --no-fund'
+          fi
+          # Update the dependencies and re-read the builder from hdbt.
+          install "$SUBTHEME_DIR" 'npm update --ignore-scripts --no-audit --no-fund --min-release-age=3 && npm install ../../contrib/hdbt/theme-builder --ignore-scripts --no-audit --no-fund --min-release-age=3'
+
+      # Build the subtheme.
+      - name: Build subtheme
+        run: |
+          docker run --rm --init \
+            --user "$(id -u):$(id -g)" \
+            --network none \
+            --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --read-only \
+            --tmpfs /tmp:rw,mode=1777,size=1g \
+            --env HOME=/tmp \
+            --env CI=true \
+            --volume "$PWD/$SUBTHEME_DIR:/app/$SUBTHEME_DIR" \
+            --volume "$PWD/$HDBT_DIR:/app/$HDBT_DIR:ro" \
+            --workdir "/app/$SUBTHEME_DIR" \
+            node:24-alpine \
+            npm run build
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: theme
+          path: |
+            ${{ env.SUBTHEME_DIR }}/package-lock.json
+            ${{ env.SUBTHEME_DIR }}/dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  # Commit the built HDBT subtheme to the update PR.
+  update-theme-commit:
+    needs: update-theme-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: update-configuration
+          token: ${{ secrets.automatic_update_token }}
+
+      - name: Remove old dist
+        run: rm -rf "$SUBTHEME_DIR/dist"
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: theme
+          path: ${{ env.SUBTHEME_DIR }}
+
+      # Commit only the lockfile and dist.
+      - uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7.2.0
+        with:
+          commit_message: Update theme
+          file_pattern: ${{ env.SUBTHEME_DIR }}/package-lock.json ${{ env.SUBTHEME_DIR }}/dist
