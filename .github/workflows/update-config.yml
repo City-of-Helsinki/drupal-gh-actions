@@ -143,7 +143,7 @@ jobs:
       # Install the subtheme npm packages without running package scripts.
       - name: Install dependencies
         run: |
-          install() {
+          run_npm() {
             docker run --rm \
               --user "$(id -u):$(id -g)" \
               --env HOME=/tmp \
@@ -151,14 +151,24 @@ jobs:
               --volume "$PWD/public:/app/public" \
               --workdir "/app/$1" \
               node:24-alpine \
-              sh -c "npm install --global --prefix /tmp/npm npm@12 --no-audit --no-fund && $2 && npm audit signatures"
+              sh -c "npm install --global --prefix /tmp/npm npm@12 --no-audit --no-fund > /dev/null && $2"
           }
 
           if jq -e '.scripts.postinstall' "$SUBTHEME_DIR/package.json" > /dev/null; then
-            install "$HDBT_DIR" 'npm ci --ignore-scripts --no-audit --no-fund'
+            run_npm "$HDBT_DIR" 'npm ci --ignore-scripts --no-audit --no-fund && npm audit signatures'
           fi
-          # Update the dependencies and re-read the builder from hdbt.
-          install "$SUBTHEME_DIR" 'npm update --ignore-scripts --no-audit --no-fund --min-release-age=3 && npm install ../../contrib/hdbt/theme-builder --ignore-scripts --no-audit --no-fund --min-release-age=3'
+          # Re-read the builder from hdbt.
+          run_npm "$SUBTHEME_DIR" 'npm install ../../contrib/hdbt/theme-builder --ignore-scripts --no-audit --no-fund --min-release-age=3'
+
+          # Update packages with critical advisories within their ranges.
+          CRITICAL=$(run_npm "$SUBTHEME_DIR" 'npm audit --json || true' \
+            | jq -r '.vulnerabilities // {} | to_entries[] | select(any(.value.via[]; type == "object" and .severity == "critical")) | .key' \
+            | xargs)
+          if [ -n "$CRITICAL" ]; then
+            echo "Updating critical packages: $CRITICAL"
+            run_npm "$SUBTHEME_DIR" "npm update $CRITICAL --ignore-scripts --no-audit --no-fund"
+          fi
+          run_npm "$SUBTHEME_DIR" 'npm audit signatures'
 
       # Build the subtheme.
       - name: Build subtheme
