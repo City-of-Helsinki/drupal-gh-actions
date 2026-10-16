@@ -18,7 +18,7 @@ jobs:
             git -C public/themes/contrib/hdbt checkout -q FETCH_HEAD
           fi
 
-      # The update-config workflow updates the hdbt_subtheme packages.
+      # The update-config workflow updates the custom module packages.
       - name: Run npm audit
         id: npm_audit
         run: |
