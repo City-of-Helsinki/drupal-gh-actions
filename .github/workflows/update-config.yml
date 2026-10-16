@@ -151,7 +151,7 @@ jobs:
               --volume "$PWD/public:/app/public" \
               --workdir "/app/$1" \
               node:24-alpine \
-              sh -c "npm install --global --prefix /tmp/npm npm@12 --no-audit --no-fund > /dev/null && $2"
+              sh -c "npm install --global --prefix /tmp/npm npm@12 --no-audit --no-fund > /dev/null && hash -r && $2"
           }
 
           if jq -e '.scripts.postinstall' "$SUBTHEME_DIR/package.json" > /dev/null; then
