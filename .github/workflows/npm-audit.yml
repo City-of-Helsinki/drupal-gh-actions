@@ -1,15 +1,27 @@
 on:
   workflow_call:
+    inputs:
+      paths:
+        description: 'Space separated list of paths to search for .nvmrc files'
+        default: 'public/modules/custom'
+        required: false
+        type: string
+      fetch_hdbt:
+        description: 'Whether to fetch hdbt at the commit locked in composer.lock'
+        default: true
+        required: false
+        type: boolean
 jobs:
   npm_audit:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Check out hdbt at the locked commit for the theme builder dependency.
       - name: Fetch hdbt
+        if: inputs.fetch_hdbt
         run: |
           REF=$(jq -r '.packages[] | select(.name == "drupal/hdbt") | .source.reference' composer.lock)
           if [ -n "$REF" ] && [ "$REF" != "null" ]; then
@@ -21,8 +33,10 @@ jobs:
       # The update-config workflow updates the custom module packages.
       - name: Run npm audit
         id: npm_audit
+        env:
+          SEARCH_PATHS: ${{ inputs.paths }}
         run: |
-          find public/modules/custom -name node_modules -prune -o -type f -name ".nvmrc" -exec sh -c '
+          find $SEARCH_PATHS -name node_modules -prune -o -type f -name ".nvmrc" -exec sh -c '
             dir=$(dirname "$1")
             node_version=$(cat "$1")
             echo "Using Node.js version $node_version in $dir"
@@ -63,7 +77,7 @@ jobs:
                * `git fetch --all`
                * `git checkout automation/npm-audit`
                * `git pull origin automation/npm-audit`
-            * In the custom module folder, run `nvm use && npm i && npm run build`
+            * In the folder with the updated `package-lock.json`, run `nvm use && npm i && npm run build`
 
             ## How to test
             Run `npm audit`

@@ -118,7 +118,7 @@ jobs:
 
 ## NPM Audit
 
-Updates HDBT Subtheme Node.js dependencies using `npm audit`.
+Updates custom module Node.js dependencies using `npm audit`.
 
 ## Visual regression cleanup
 
