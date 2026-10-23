@@ -8,10 +8,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      # Check out hdbt at the locked commit for the theme builder dependency.
+      - name: Fetch hdbt
+        run: |
+          REF=$(jq -r '.packages[] | select(.name == "drupal/hdbt") | .source.reference' composer.lock)
+          if [ -n "$REF" ] && [ "$REF" != "null" ]; then
+            git init -q public/themes/contrib/hdbt
+            git -C public/themes/contrib/hdbt fetch -q --depth 1 https://github.com/City-of-Helsinki/drupal-hdbt.git "$REF"
+            git -C public/themes/contrib/hdbt checkout -q FETCH_HEAD
+          fi
+
+      # The update-config workflow updates the custom module packages.
       - name: Run npm audit
         id: npm_audit
         run: |
-          find public/modules/custom public/themes/custom -type f -name ".nvmrc" -exec sh -c '
+          find public/modules/custom -name node_modules -prune -o -type f -name ".nvmrc" -exec sh -c '
             dir=$(dirname "$1")
             node_version=$(cat "$1")
             echo "Using Node.js version $node_version in $dir"
@@ -19,6 +30,7 @@ jobs:
             export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm install $node_version
             nvm use $node_version
+            npm install --global npm@12 --loglevel=error
             set +e
             npm audit --package-lock-only --loglevel=error;
             # The npm audit command will exit with a 0 exit code if no vulnerabilities were found.
@@ -51,7 +63,7 @@ jobs:
                * `git fetch --all`
                * `git checkout automation/npm-audit`
                * `git pull origin automation/npm-audit`
-            * In the custom module or custom theme folder, run `nvm use && npm i && npm run build`
+            * In the custom module folder, run `nvm use && npm i && npm run build`
 
             ## How to test
             Run `npm audit`
