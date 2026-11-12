@@ -46,7 +46,22 @@ jobs:
           composer install --no-interaction --no-dev
           $(drush sql:connect --extra=--skip-ssl) < dump.sql
           drush cim -y && drush updb -y && drush cr
-          composer update -W --no-interaction
+
+          # The Composer cooldown policy holds back security releases too. When
+          # the fix of a security advisory is still in the cooldown period and
+          # older versions are blocked as insecure, Composer falls back to a
+          # dev branch or fails. Allow insecure versions in the full update,
+          # then update the packages with security advisories without the
+          # cooldown, so the fixes don't wait for the cooldown period.
+          COMPOSER_POLICY_ADVISORIES_BLOCK=0 composer update -W --no-interaction
+
+          VULNERABLE=$(composer audit --locked --format=json --no-interaction | jq -r '.advisories | keys[]') || true
+          if [ -n "$VULNERABLE" ]; then
+            echo "Updating packages with security advisories: $VULNERABLE"
+            # Word splitting is intended: one argument per package.
+            composer update $VULNERABLE -W --no-cooldown --no-interaction || \
+              echo "::warning::Failed to update packages with security advisories: $VULNERABLE"
+          fi
 
           # Make sure new patches are installed.
           composer install --no-interaction --no-dev
