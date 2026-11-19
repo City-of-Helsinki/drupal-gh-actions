@@ -3,6 +3,12 @@ on:
     secrets:
       automatic_update_token:
         required: true
+# Run one update at a time per repository. Overlapping runs push to the same
+# 'update-configuration' branch, and a run with nothing to push still resets
+# the pull request description. A queued run replaces any older queued run.
+concurrency:
+  group: update-config-${{ github.repository }}
+  cancel-in-progress: false
 env:
   GH_TOKEN: ${{ github.token }}
   SUBTHEME_DIR: public/themes/custom/hdbt_subtheme
