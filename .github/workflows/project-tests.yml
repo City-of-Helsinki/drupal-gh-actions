@@ -82,10 +82,6 @@ jobs:
       - name: Build project
         run: docker compose exec app bash -c "composer install --no-interaction"
 
-      - name: Scan security updates
-        if: ${{ inputs.check_security_updates }}
-        run: docker compose exec app bash -c "composer audit"
-
       - name: Scan Composer patches
         run: docker compose exec app bash -c "drush helfi:tools:check-composer-patches /app/composer.lock --format=markdown_table" >> $GITHUB_STEP_SUMMARY
 
@@ -140,6 +136,10 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@299e4b793aaa83bf2aba7c9c14bedbb485688ec4 # v7.1.0
         env:
           SONAR_TOKEN: ${{ secrets.sonarcloud_token }}
+
+      - name: Scan security updates
+        if: ${{ inputs.check_security_updates }}
+        run: docker compose exec app bash -c "composer audit"
 
       - name: Export logs
         if: always()
