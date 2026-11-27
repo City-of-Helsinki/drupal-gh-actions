@@ -175,7 +175,9 @@ jobs:
               sh -c "npm install --global --prefix /tmp/npm npm@12 --no-audit --no-fund > /dev/null && hash -r && $2"
           }
 
-          if jq -e '.scripts.postinstall' "$SUBTHEME_DIR/package.json" > /dev/null; then
+          # Subthemes with React apps install the hdbt packages, in preinstall
+          # or in the older postinstall.
+          if jq -e '[.scripts // {} | .[] | select(contains("--prefix ../../contrib/hdbt "))] | length > 0' "$SUBTHEME_DIR/package.json" > /dev/null; then
             run_npm "$HDBT_DIR" 'npm ci --ignore-scripts --no-audit --no-fund && npm audit signatures'
           fi
           # Re-read the builder from hdbt.
